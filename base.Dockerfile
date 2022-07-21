@@ -50,8 +50,8 @@ ENV GEM_HOME=/usr/local/bundle \
 	RAILS_ENV=production \
 	NODE_ENV=production \
 	BUNDLE_WITHOUT="development test" \
-	GOVUK_APP_DOMAIN=unused \
-	GOVUK_WEBSITE_ROOT=unused \
+	GOVUK_APP_DOMAIN=www.gov.uk \
+	GOVUK_WEBSITE_ROOT=https://www.gov.uk \
 	GOVUK_PROMETHEUS_EXPORTER=true
 
 RUN install_packages ca-certificates curl gpg build-essential && \
