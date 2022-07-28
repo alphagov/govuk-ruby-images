@@ -71,7 +71,4 @@ RUN groupadd -g 1001 app && \
 # Make irb log history to a file
 RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > irb.rc
 
-# Make /tmp writable by all, required for E2E tests
-RUN chmod 777 /tmp
-
 LABEL org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
