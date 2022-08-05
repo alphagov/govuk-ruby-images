@@ -1,4 +1,0 @@
-# TODO: Stop explicitly using patch versions
-RUBY_MAJOR="3.0.4"
-RUBY_VERSION="3.0.4"
-RUBY_DOWNLOAD_SHA256="8e22fc7304520435522253210ed0aa9a50545f8f13c959fe01a05aea06bef2f0"
