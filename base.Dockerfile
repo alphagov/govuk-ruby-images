@@ -10,7 +10,7 @@ ENV LANG=C.UTF-8 \
   RUBY_DOWNLOAD_SHA256=${RUBY_DOWNLOAD_SHA256}
 
 # Install build dependencies
-RUN install_packages build-essential bison dpkg-dev libgdbm-dev ruby wget autoconf libssl-dev zlib1g-dev libreadline-dev
+RUN install_packages build-essential bison dpkg-dev libgdbm-dev ruby wget autoconf libssl-dev zlib1g-dev libreadline-dev default-libmysqlclient-dev
 
 # Build Ruby
 RUN set -eux; \
