@@ -14,7 +14,7 @@ for VERSION in versions/*; do
   if [ "${RUBY_IS_PATCH}" != "true" ]; then
     docker push "ghcr.io/alphagov/govuk-ruby-base:${RUBY_MAJOR}"
   fi
-  docker push "ghcr.io/alphagov/govuk-ruby-base:${RUBY_MAJOR}"
+  docker push "ghcr.io/alphagov/govuk-ruby-base:${RUBY_VERSION}"
 
   # Build & push builder image
   docker build . -t "ghcr.io/alphagov/govuk-ruby-builder:${RUBY_MAJOR}" \
