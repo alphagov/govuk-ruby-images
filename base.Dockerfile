@@ -10,7 +10,7 @@ ENV LANG=C.UTF-8 \
   RUBY_DOWNLOAD_SHA256=${RUBY_DOWNLOAD_SHA256}
 
 # Install build dependencies
-RUN install_packages build-essential bison dpkg-dev libgdbm-dev ruby wget autoconf libssl-dev zlib1g-dev libreadline-dev default-libmysqlclient-dev
+RUN install_packages build-essential bison dpkg-dev libgdbm-dev ruby wget autoconf libssl-dev zlib1g-dev libreadline-dev
 
 # Build Ruby
 RUN set -eux; \
@@ -59,7 +59,7 @@ ENV GEM_HOME=/usr/local/bundle \
 	GOVUK_PROMETHEUS_EXPORTER=true
 
 # Install node.js and yarn
-RUN install_packages ca-certificates curl gpg build-essential && \
+RUN install_packages ca-certificates curl gpg build-essential default-libmysqlclient-dev && \
 	curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee "/usr/share/keyrings/nodesource.gpg" >/dev/null && \
 	echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x bullseye main" | tee /etc/apt/sources.list.d/nodesource.list && \
 	install_packages nodejs && npm i -g yarn
