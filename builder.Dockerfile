@@ -1,7 +1,7 @@
 ARG RUBY_MAJOR
 FROM ghcr.io/alphagov/govuk-ruby-base:${RUBY_MAJOR}
 
-RUN install_packages git
+RUN install_packages git libpq-dev
 
 # Environment variables to make build cleaner and faster
 ENV BUNDLE_IGNORE_MESSAGES=1 \
