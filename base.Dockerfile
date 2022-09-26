@@ -82,6 +82,7 @@ ENV APP_HOME=/app \
 	BUNDLE_PATH=/usr/local/bundle \
 	BUNDLE_BIN=/usr/local/bundle/bin \
 	PATH=/usr/local/bundle/bin:$PATH \
+	IRBRC=/etc/irb.rc \
 	RAILS_LOG_TO_STDOUT=1 \
 	RAILS_ENV=production \
 	NODE_ENV=production \
@@ -104,6 +105,6 @@ RUN groupadd -g 1001 app && \
 	useradd -u 1001 -g app app --home $APP_HOME
 
 # Make irb log history to a file
-RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > irb.rc
+RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > "$IRBRC"
 
 LABEL org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
