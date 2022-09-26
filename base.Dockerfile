@@ -61,11 +61,11 @@ RUN set -eux; \
 	make -j "$(nproc)"; \
 	make install;
 
+
 FROM public.ecr.aws/lts/ubuntu:22.04_stable
 
 # Copy helper script for package installation
-COPY install_packages.sh /usr/sbin/install_packages
-RUN chmod 755 /usr/sbin/install_packages
+COPY --from=builder /usr/sbin/install_packages /usr/sbin/install_packages
 
 # Copy Ruby binaries from builder image
 COPY --from=builder /build /
