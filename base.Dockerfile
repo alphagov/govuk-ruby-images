@@ -76,12 +76,17 @@ RUN rmdir /opt/openssl/certs; \
 	ln -s /etc/ssl/certs /opt/openssl/certs
 
 # Set common environment variables
-ENV GEM_HOME=/usr/local/bundle \
+ENV APP_HOME=/app \
+	GEM_HOME=/usr/local/bundle \
 	BUNDLE_APP_CONFIG=/usr/local/bundle \
+	BUNDLE_PATH=/usr/local/bundle \
+	BUNDLE_BIN=/usr/local/bundle/bin \
+	PATH=/usr/local/bundle/bin:$PATH \
 	RAILS_LOG_TO_STDOUT=1 \
 	RAILS_ENV=production \
 	NODE_ENV=production \
-	BUNDLE_WITHOUT="development test" \
+	BUNDLE_WITHOUT="development test cucumber" \
+	BOOTSNAP_CACHE_DIR=/var/cache/bootsnap \
 	GOVUK_APP_DOMAIN=www.gov.uk \
 	GOVUK_WEBSITE_ROOT=https://www.gov.uk \
 	GOVUK_PROMETHEUS_EXPORTER=true \
@@ -96,7 +101,7 @@ RUN install_packages ca-certificates curl gpg default-libmysqlclient-dev tzdata 
 
 # Add app user
 RUN groupadd -g 1001 app && \
-	useradd -u 1001 -g app app --home /app
+	useradd -u 1001 -g app app --home $APP_HOME
 
 # Make irb log history to a file
 RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > irb.rc
