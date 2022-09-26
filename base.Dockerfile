@@ -4,8 +4,9 @@ FROM public.ecr.aws/lts/ubuntu:22.04_stable AS builder
 COPY install_packages.sh /usr/sbin/install_packages
 RUN chmod 755 /usr/sbin/install_packages
 
-# Build args to specify which Ruby version to build
+# Fail fast if mandatory build args are missing.
 ARG RUBY_MAJOR RUBY_VERSION RUBY_DOWNLOAD_SHA256
+RUN : "${RUBY_MAJOR?}" "${RUBY_VERSION?}" "${RUBY_DOWNLOAD_SHA256?}"
 
 # Set environment variables required for build
 ENV LANG=C.UTF-8 \
