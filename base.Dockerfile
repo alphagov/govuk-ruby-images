@@ -104,6 +104,10 @@ RUN install_packages ca-certificates curl gpg default-libmysqlclient-dev tzdata 
 RUN groupadd -g 1001 app && \
 	useradd -u 1001 -g app app --home $APP_HOME
 
+# Some Rubygems (libraries) assume that they can write to tmp/ within the Rails
+# app's base directory.
+RUN mkdir -p $APP_HOME && ln -fs /tmp $APP_HOME
+
 # Make irb log history to a file
 RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > "$IRBRC"
 
