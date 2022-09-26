@@ -13,7 +13,8 @@ RUN : "${RUBY_MAJOR?}" "${RUBY_VERSION?}" "${RUBY_DOWNLOAD_SHA256?}"
 ENV LANG=C.UTF-8 \
   RUBY_MAJOR=${RUBY_MAJOR} \
   RUBY_VERSION=${RUBY_VERSION} \
-  RUBY_DOWNLOAD_SHA256=${RUBY_DOWNLOAD_SHA256}
+  RUBY_DOWNLOAD_SHA256=${RUBY_DOWNLOAD_SHA256} \
+  MAKEFLAGS=-j"$(nproc)"
 
 # Install build dependencies
 RUN install_packages build-essential bison dpkg-dev libgdbm-dev ruby wget autoconf zlib1g-dev libreadline-dev checkinstall
@@ -27,7 +28,7 @@ RUN set -eux; \
 	cd /usr/src/openssl; \
 	./config --prefix=/opt/openssl --openssldir=/opt/openssl shared zlib; \
 	make; \
-	make install;
+	make install_sw;  # Avoid building manpages and such.
 
 # Build Ruby
 RUN set -eux; \
