@@ -1,4 +1,5 @@
 FROM public.ecr.aws/lts/ubuntu:22.04_stable AS builder
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Copy helper script for package installation
 COPY install_packages.sh /usr/sbin/install_packages
