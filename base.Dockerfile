@@ -89,7 +89,7 @@ ENV GEM_HOME=/usr/local/bundle \
 	TZ=Europe/London
 
 # Install node.js, yarn and other runtime dependencies
-RUN install_packages ca-certificates curl gpg build-essential default-libmysqlclient-dev tzdata libpq5 && \
+RUN install_packages ca-certificates curl gpg default-libmysqlclient-dev tzdata libpq5 && \
 	curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee "/usr/share/keyrings/nodesource.gpg" >/dev/null && \
 	echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x jammy main" | tee /etc/apt/sources.list.d/nodesource.list && \
 	install_packages nodejs && npm i -g yarn
