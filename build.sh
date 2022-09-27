@@ -25,7 +25,7 @@ for VERSION in versions/*; do
       "ghcr.io/alphagov/${IMAGE_NAME}:${RUBY_MAJOR}" \
       "ghcr.io/alphagov/${IMAGE_NAME}:${RUBY_VERSION}"
 
-    if [[ -n ${DRY_RUN} ]]; then
+    if [[ -n ${DRY_RUN:-} ]]; then
       echo "DRY_RUN is set so not pushing to DockerHub"
     else
       if [[ "${RUBY_IS_PATCH}" != "true" ]]; then
