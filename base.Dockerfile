@@ -67,6 +67,10 @@ FROM public.ecr.aws/lts/ubuntu:22.04_stable
 # Copy helper script for package installation
 COPY --from=builder /usr/sbin/install_packages /usr/sbin/install_packages
 
+# Copy helper script for running app with a cron daemon
+COPY run_with_cron.sh /usr/sbin/run_with_cron
+RUN chmod 755 /usr/sbin/run_with_cron
+
 # Copy Ruby binaries from builder image
 COPY --from=builder /build /
 
@@ -92,17 +96,21 @@ ENV APP_HOME=/app \
     GOVUK_WEBSITE_ROOT=https://www.gov.uk \
     GOVUK_PROMETHEUS_EXPORTER=true \
     DEBIAN_FRONTEND=noninteractive \
-    TZ=Europe/London
+    TZ=Europe/London \
+    # Variables for cron jobs
+    CRON_LOG=/dev/pts/0 \
+    CRON_ERROR_LOG=/dev/pts/0 \
+    BUNDLER_PREFIX="source /etc/cron-environment &&"
 
 # Install node.js, yarn and other runtime dependencies
-RUN install_packages ca-certificates curl gpg default-libmysqlclient-dev tzdata libpq5 cron && \
+RUN install_packages ca-certificates curl gpg default-libmysqlclient-dev tzdata libpq5 cron sudo && \
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee "/usr/share/keyrings/nodesource.gpg" >/dev/null && \
     echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x jammy main" | tee /etc/apt/sources.list.d/nodesource.list && \
     install_packages nodejs && npm i -g yarn
 
 # Add app user
 RUN groupadd -g 1001 app && \
-    useradd -u 1001 -g app app --home $APP_HOME
+    useradd -u 1001 -g app -G tty app --home $APP_HOME
 
 # Some Rubygems (libraries) assume that they can write to tmp/ within the Rails
 # app's base directory.
