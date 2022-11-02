@@ -21,8 +21,8 @@ RUN install_packages build-essential bison dpkg-dev libgdbm-dev ruby wget autoco
 
 # TODO: stop building OpenSSL once all apps are on Ruby 3.1+.
 RUN set -eux; \
-    wget -O openssl.tar.gz "https://www.openssl.org/source/openssl-1.1.1q.tar.gz"; \
-    echo "d7939ce614029cdff0b6c20f0e2e5703158a489a72b2507b8bd51bf8c8fd10ca openssl.tar.gz" | sha256sum --check; \
+    wget -O openssl.tar.gz "https://www.openssl.org/source/openssl-1.1.1s.tar.gz"; \
+    echo "c5ac01e760ee6ff0dab61d6b2bbd30146724d063eb322180c6f18a6f74e4b6aa openssl.tar.gz" | sha256sum --check; \
     mkdir -p /usr/src/openssl; \
     tar -xf openssl.tar.gz -C /usr/src/openssl --strip-components=1; \
     cd /usr/src/openssl; \
