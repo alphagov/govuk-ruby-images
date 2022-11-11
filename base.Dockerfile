@@ -1,9 +1,8 @@
 FROM public.ecr.aws/lts/ubuntu:22.04_stable AS builder
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Copy helper script for package installation
+# Helper script for package installation
 COPY install_packages.sh /usr/sbin/install_packages
-RUN chmod 755 /usr/sbin/install_packages
 
 # Fail fast if mandatory build args are missing.
 ARG RUBY_MAJOR RUBY_VERSION RUBY_DOWNLOAD_SHA256
