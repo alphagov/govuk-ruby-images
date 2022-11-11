@@ -13,10 +13,10 @@
 # clearly to mitigate potential tempfile vulnerabilities on multiuser servers,
 # but this is a non-issue in a container-per-process model.
 #
-# Usage: mktemp-for-ruby command [args ...]
+# Usage: with_tmpdir_for_ruby command [args ...]
 #
 
 set -eux
 
 dir=$(mktemp -d "${TMPDIR:-/tmp}/ruby-app-XXXXXXXX")
-TMPDIR={$dir} "$@"
+TMPDIR="${dir}" "$@"
