@@ -67,6 +67,9 @@ FROM public.ecr.aws/lts/ubuntu:22.04_stable
 # Copy helper script for package installation
 COPY --from=builder /usr/sbin/install_packages /usr/sbin/install_packages
 
+# Wrapper script for running Ruby with a TMPDIR that it's happy with.
+COPY mktmp_for_ruby.sh /usr/bin/mktmp_for_ruby
+
 # Copy Ruby binaries from builder image
 COPY --from=builder /build /
 
