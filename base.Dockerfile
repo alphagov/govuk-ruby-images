@@ -1,9 +1,8 @@
 FROM public.ecr.aws/lts/ubuntu:22.04_stable AS builder
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Copy helper script for package installation
+# Helper script for package installation
 COPY install_packages.sh /usr/sbin/install_packages
-RUN chmod 755 /usr/sbin/install_packages
 
 # Fail fast if mandatory build args are missing.
 ARG RUBY_MAJOR RUBY_VERSION RUBY_DOWNLOAD_SHA256
@@ -66,6 +65,9 @@ FROM public.ecr.aws/lts/ubuntu:22.04_stable
 
 # Copy helper script for package installation
 COPY --from=builder /usr/sbin/install_packages /usr/sbin/install_packages
+
+# Wrapper script for running Ruby with a TMPDIR that it's happy with.
+COPY mktmp_for_ruby.sh /usr/bin/mktmp_for_ruby
 
 # Copy Ruby binaries from builder image
 COPY --from=builder /build /
