@@ -25,7 +25,7 @@ RUN set -eux; \
     mkdir -p /usr/src/openssl; \
     tar -xf openssl.tar.gz -C /usr/src/openssl --strip-components=1; \
     cd /usr/src/openssl; \
-    ./config --prefix=/opt/openssl --openssldir=/opt/openssl shared zlib; \
+    ./config --prefix=/opt/openssl --openssldir=/opt/openssl no-tests shared zlib; \
     make; \
     make install_sw;  # Avoid building manpages and such.
 
