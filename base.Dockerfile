@@ -64,10 +64,7 @@ RUN set -eux; \
 FROM public.ecr.aws/lts/ubuntu:22.04_stable
 
 # Helper script for installing Debian packages.
-COPY --from=builder /usr/sbin/install_packages /usr/sbin/install_packages
-
-# Wrapper script for running Ruby with a TMPDIR that it's happy with.
-COPY with_tmpdir_for_ruby.sh /usr/bin/with_tmpdir_for_ruby
+COPY install_packages.sh /usr/sbin/install_packages
 
 # Ruby binaries from builder image.
 COPY --from=builder /build /
@@ -95,6 +92,21 @@ ENV APP_HOME=/app \
     GOVUK_PROMETHEUS_EXPORTER=true \
     DEBIAN_FRONTEND=noninteractive \
     TZ=Europe/London
+
+# Wrap Ruby binaries in a script that sets up a TMPDIR that Ruby will accept.
+# TODO: remove this when Ruby allows disabling its permissions checks on /tmp.
+COPY with_tmpdir_for_ruby.sh ${TMPDIR_FOR_RUBY_WRAPPERS_DIR}/with_tmpdir_for_ruby
+ARG ruby_bin=/usr/local/bin
+ENV TMPDIR_FOR_RUBY_WRAPPERS_DIR=/usr/local/tmpdir_wrappers
+RUN mkdir -p "${TMPDIR_FOR_RUBY_WRAPPERS_DIR}" && \
+    for wrapped_cmd in "${ruby_bin}"/* "${BUNDLE_BIN}"/*; do \
+        ln -s with_tmpdir_for_ruby "${TMPDIR_FOR_RUBY_WRAPPERS_DIR}"/"$(basename "${wrapped_cmd}")"; \
+    done
+# The wrappers come first in PATH so that commands like `rake` and `rails c`
+# work as expected rather requiring everyone to prefix their commands with
+# `with_tmpdir_for_ruby`.
+ENV TMPDIR_FOR_RUBY_ORIGINAL_PATH=${PATH}
+ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
 
 # Install node.js, yarn and other runtime dependencies.
 RUN install_packages ca-certificates curl gpg default-libmysqlclient-dev tzdata libpq5 && \
