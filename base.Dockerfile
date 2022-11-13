@@ -1,21 +1,21 @@
 FROM public.ecr.aws/lts/ubuntu:22.04_stable AS builder
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Helper script for package installation
+# Helper script for installing Debian packages.
 COPY install_packages.sh /usr/sbin/install_packages
 
 # Fail fast if mandatory build args are missing.
 ARG RUBY_MAJOR RUBY_VERSION RUBY_DOWNLOAD_SHA256
 RUN : "${RUBY_MAJOR?}" "${RUBY_VERSION?}" "${RUBY_DOWNLOAD_SHA256?}"
 
-# Set environment variables required for build
+# Environment variables required for build.
 ENV LANG=C.UTF-8 \
     RUBY_MAJOR=${RUBY_MAJOR} \
     RUBY_VERSION=${RUBY_VERSION} \
     RUBY_DOWNLOAD_SHA256=${RUBY_DOWNLOAD_SHA256} \
     MAKEFLAGS=-j"$(nproc)"
 
-# Install build dependencies
+# Build-time dependencies.
 RUN install_packages build-essential bison dpkg-dev libgdbm-dev ruby wget autoconf zlib1g-dev libreadline-dev checkinstall
 
 # TODO: stop building OpenSSL once all apps are on Ruby 3.1+.
@@ -29,7 +29,7 @@ RUN set -eux; \
     make; \
     make install_sw;  # Avoid building manpages and such.
 
-# Build Ruby
+# Build Ruby.
 RUN set -eux; \
     \
     wget -O ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR}/ruby-${RUBY_VERSION}.tar.xz"; \
@@ -63,21 +63,21 @@ RUN set -eux; \
 
 FROM public.ecr.aws/lts/ubuntu:22.04_stable
 
-# Copy helper script for package installation
+# Helper script for installing Debian packages.
 COPY --from=builder /usr/sbin/install_packages /usr/sbin/install_packages
 
 # Wrapper script for running Ruby with a TMPDIR that it's happy with.
 COPY with_tmpdir_for_ruby.sh /usr/bin/with_tmpdir_for_ruby
 
-# Copy Ruby binaries from builder image
+# Ruby binaries from builder image.
 COPY --from=builder /build /
 
-# Copy OpenSSL and link in system castore
 COPY --from=builder /opt/openssl /opt/openssl
+# Make our locally-built OpenSSL use the system cacert store.
 RUN rmdir /opt/openssl/certs; \
     ln -s /etc/ssl/certs /opt/openssl/certs
 
-# Set common environment variables
+# Environment variables common to most GOV.UK apps.
 ENV APP_HOME=/app \
     GEM_HOME=/usr/local/bundle \
     BUNDLE_APP_CONFIG=/usr/local/bundle \
@@ -96,13 +96,12 @@ ENV APP_HOME=/app \
     DEBIAN_FRONTEND=noninteractive \
     TZ=Europe/London
 
-# Install node.js, yarn and other runtime dependencies
+# Install node.js, yarn and other runtime dependencies.
 RUN install_packages ca-certificates curl gpg default-libmysqlclient-dev tzdata libpq5 && \
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee "/usr/share/keyrings/nodesource.gpg" >/dev/null && \
     echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x jammy main" | tee /etc/apt/sources.list.d/nodesource.list && \
     install_packages nodejs && npm i -g yarn
 
-# Add app user
 RUN groupadd -g 1001 app && \
     useradd -u 1001 -g app app --home $APP_HOME
 
@@ -110,7 +109,7 @@ RUN groupadd -g 1001 app && \
 # app's base directory.
 RUN mkdir -p $APP_HOME && ln -fs /tmp $APP_HOME
 
-# Make irb log history to a file
+# Set irb's history path to somewhere writable so that it doesn't complain.
 RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > "$IRBRC"
 
 LABEL org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
