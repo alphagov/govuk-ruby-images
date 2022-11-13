@@ -17,6 +17,7 @@ set -eu
 # for the Ruby version defined in the file versions/$1.
 build_version() {
   RUBY_IS_PATCH=false
+  # shellcheck disable=SC1090
   source "$1"
 
   for IMAGE_TYPE in base builder; do
