@@ -45,7 +45,7 @@ build_version() {
 }
 
 if [[ -n "${1:-}" ]]; then
-  build_version "$1"
+  build_version versions/"$1"
 else
   for v in versions/*; do
     build_version "$v"
