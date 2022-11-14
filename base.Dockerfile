@@ -1,5 +1,5 @@
 FROM public.ecr.aws/lts/ubuntu:22.04_stable AS builder
-SHELL ["/bin/bash", "-uo", "pipefail", "-c"]
+SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 
 # Helper script for installing Debian packages.
 COPY install_packages.sh /usr/sbin/install_packages
@@ -19,27 +19,26 @@ ENV LANG=C.UTF-8 \
 RUN install_packages build-essential bison dpkg-dev libgdbm-dev ruby wget autoconf zlib1g-dev libreadline-dev checkinstall
 
 # TODO: stop building OpenSSL once all apps are on Ruby 3.1+.
-RUN set -eux; \
-    wget -O openssl.tar.gz "https://www.openssl.org/source/openssl-1.1.1s.tar.gz"; \
+WORKDIR /usr/src/openssl
+RUN set -x; \
+    wget --progress=dot:mega -O openssl.tar.gz "https://www.openssl.org/source/openssl-1.1.1s.tar.gz"; \
     echo "c5ac01e760ee6ff0dab61d6b2bbd30146724d063eb322180c6f18a6f74e4b6aa openssl.tar.gz" | sha256sum --check; \
-    mkdir -p /usr/src/openssl; \
-    tar -xf openssl.tar.gz -C /usr/src/openssl --strip-components=1; \
-    cd /usr/src/openssl; \
+    tar -xf openssl.tar.gz --strip-components=1; \
+    rm openssl.tar.gz; \
     ./config --prefix=/opt/openssl --openssldir=/opt/openssl no-tests shared zlib; \
     make; \
     make install_sw;  # Avoid building manpages and such.
 
 # Build Ruby.
-RUN set -eux; \
+WORKDIR /usr/src/ruby
+RUN set -x; \
     \
-    wget -O ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR}/ruby-${RUBY_VERSION}.tar.xz"; \
+    wget --progress=dot:mega -O ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR}/ruby-${RUBY_VERSION}.tar.xz"; \
     echo "$RUBY_DOWNLOAD_SHA256 *ruby.tar.xz" | sha256sum --check --strict; \
     \
-    mkdir -p /usr/src/ruby /build; \
-    tar -xJf ruby.tar.xz -C /usr/src/ruby --strip-components=1; \
+    mkdir -p /build; \
+    tar -xJf ruby.tar.xz --strip-components=1; \
     rm ruby.tar.xz; \
-    \
-    cd /usr/src/ruby; \
     \
     { \
       echo '#define ENABLE_PATH_CHECK 0'; \
