@@ -1,7 +1,18 @@
-name: Publish Docker images
+name: Build and push images
 
 on:
   workflow_dispatch:
+    inputs:
+      gitRef:
+        description: Commit, tag or branch name to deploy
+        required: true
+        type: string
+        default: main
+      pushToRegistry:
+        description: Push images to registry
+        required: true
+        type: boolean
+        default: true
   push:
     branches:
       - main
@@ -10,18 +21,28 @@ on:
 
 jobs:
   build_and_push:
-    name: Build and push images to GHCR
+    name: Build ruby_${{ matrix.version }} images and push to GHCR
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        version: ['2_7', '3_0', '3_1']
     permissions:
       packages: write
     steps:
       - name: Login to GHCR
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a  # v2.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.gitRef }}
       - name: Build and push images
-        run: bash build.sh
-        shell: bash
+        if: ${{ inputs.pushToRegistry }}
+        run: ./build.sh ${{ matrix.version }}
+      - name: Build images (without pushing to registry)
+        if: ${{ !inputs.pushToRegistry }}
+        env:
+          DRY_RUN: "1"
+        run: ./build.sh ${{ matrix.version }}
