@@ -1,5 +1,5 @@
 FROM public.ecr.aws/lts/ubuntu:22.04_stable AS builder
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+SHELL ["/bin/bash", "-uo", "pipefail", "-c"]
 
 # Helper script for installing Debian packages.
 COPY install_packages.sh /usr/sbin/install_packages
@@ -62,6 +62,7 @@ RUN set -eux; \
 
 
 FROM public.ecr.aws/lts/ubuntu:22.04_stable
+SHELL ["/bin/bash", "-uo", "pipefail", "-c"]
 
 # Helper script for installing Debian packages.
 COPY install_packages.sh /usr/sbin/install_packages
@@ -95,12 +96,12 @@ ENV APP_HOME=/app \
 
 # Wrap Ruby binaries in a script that sets up a TMPDIR that Ruby will accept.
 # TODO: remove this when Ruby allows disabling its permissions checks on /tmp.
-COPY with_tmpdir_for_ruby.sh ${TMPDIR_FOR_RUBY_WRAPPERS_DIR}/with_tmpdir_for_ruby
 ARG ruby_bin=/usr/local/bin
 ENV TMPDIR_FOR_RUBY_WRAPPERS_DIR=/usr/local/tmpdir_wrappers
-RUN mkdir -p "${TMPDIR_FOR_RUBY_WRAPPERS_DIR}" && \
-    for wrapped_cmd in "${ruby_bin}"/* "${BUNDLE_BIN}"/*; do \
-        ln -s with_tmpdir_for_ruby "${TMPDIR_FOR_RUBY_WRAPPERS_DIR}"/"$(basename "${wrapped_cmd}")"; \
+WORKDIR $TMPDIR_FOR_RUBY_WRAPPERS_DIR
+COPY with_tmpdir_for_ruby.sh ./with_tmpdir_for_ruby
+RUN for wrapped_cmd in bundle puma pumactl rails rake "${ruby_bin}"/*; do \
+        ln -f with_tmpdir_for_ruby "$(basename "${wrapped_cmd}")"; \
     done
 # The wrappers come first in PATH so that commands like `rake` and `rails c`
 # work as expected rather requiring everyone to prefix their commands with
@@ -114,12 +115,12 @@ RUN install_packages ca-certificates curl gpg default-libmysqlclient-dev tzdata 
     echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x jammy main" | tee /etc/apt/sources.list.d/nodesource.list && \
     install_packages nodejs && npm i -g yarn
 
-RUN groupadd -g 1001 app && \
-    useradd -u 1001 -g app app --home $APP_HOME
-
+WORKDIR $APP_HOME
 # Some Rubygems (libraries) assume that they can write to tmp/ within the Rails
 # app's base directory.
-RUN mkdir -p $APP_HOME && ln -fs /tmp $APP_HOME
+RUN ln -fs /tmp $APP_HOME
+RUN groupadd -g 1001 app && \
+    useradd -u 1001 -g app app --home $APP_HOME
 
 # Set irb's history path to somewhere writable so that it doesn't complain.
 RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > "$IRBRC"
