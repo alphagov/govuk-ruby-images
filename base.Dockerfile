@@ -108,6 +108,11 @@ RUN for wrapped_cmd in bundle puma pumactl rails rake "${ruby_bin}"/*; do \
 # `with_tmpdir_for_ruby`.
 ENV TMPDIR_FOR_RUBY_ORIGINAL_PATH=${PATH}
 ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
+# Crude smoke test. Assert that Ruby Dir.tmpdir returns a subdirectory of /tmp.
+RUN set -x; \
+    expected=/tmp; \
+    actual=$(ruby -e 'require "tmpdir"; puts(File.dirname(Dir.tmpdir))'); \
+    [ "${expected}" = "${actual}" ]
 
 # Install node.js, yarn and other runtime dependencies.
 RUN install_packages ca-certificates curl gpg default-libmysqlclient-dev tzdata libpq5 && \
