@@ -38,18 +38,23 @@ usage() {
 }
 
 if [ -n "${TMPDIR_FOR_RUBY:-}" ]; then
-  echo "TMPDIR_FOR_RUBY already set; aborting to avoid infinite loop (PATH=${PATH})" >&2
+  echo "ERROR: with_tmpdir_for_ruby: TMPDIR_FOR_RUBY already set; aborting to avoid infinite loop (PATH=${PATH})" >&2
   exit 1
 fi
 
 invoked_as="$(basename "${0%.sh}")"
 if [ "${invoked_as}" = "with_tmpdir_for_ruby" ]; then
   [ $# -eq 0 ] && usage
+  cmd=$1
   shift
+else
+  cmd=$0
 fi
+cmd=$(basename "${cmd}")
 
 PATH=$TMPDIR_FOR_RUBY_ORIGINAL_PATH
 TMPDIR="$(mktemp -d "${TMPDIR:-/tmp}/ruby-app-XXXXXXXX")"
 TMPDIR_FOR_RUBY=$TMPDIR
 export PATH TMPDIR TMPDIR_FOR_RUBY
-"$0" "$@"
+echo "INFO: with_tmpdir_for_ruby: execing ${cmd} with TMPDIR=${TMPDIR}" >&2
+exec "${cmd}" "$@"
