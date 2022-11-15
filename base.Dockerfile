@@ -110,7 +110,7 @@ ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
 # Crude smoke test. Assert that Ruby Dir.tmpdir returns a subdirectory of /tmp.
 RUN set -x; \
     expected=/tmp; \
-    actual=$(ruby -e 'require "tmpdir"; puts(File.dirname(Dir.tmpdir))'); \
+    actual=$(ruby -e 'require "tmpdir"; d = Dir.tmpdir; Dir.rmdir(d); puts(File.dirname(d))'); \
     [ "${expected}" = "${actual}" ]
 
 # Install node.js, yarn and other runtime dependencies.
