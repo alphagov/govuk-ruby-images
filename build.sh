@@ -27,8 +27,7 @@ build_version() {
       -t "ghcr.io/alphagov/${IMAGE_NAME}:${RUBY_MAJOR}" \
       -f "${IMAGE_TYPE}.Dockerfile" \
       --build-arg "RUBY_MAJOR=${RUBY_MAJOR}" \
-      --build-arg "RUBY_VERSION=${RUBY_VERSION}" \
-      --build-arg "RUBY_DOWNLOAD_SHA256=${RUBY_DOWNLOAD_SHA256}"
+      --build-arg "RUBY_VERSION=${RUBY_VERSION}"
     docker tag \
       "ghcr.io/alphagov/${IMAGE_NAME}:${RUBY_MAJOR}" \
       "ghcr.io/alphagov/${IMAGE_NAME}:${RUBY_VERSION}"

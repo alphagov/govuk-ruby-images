@@ -5,26 +5,30 @@ SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 COPY install_packages.sh /usr/sbin/install_packages
 
 # Fail fast if mandatory build args are missing.
-ARG RUBY_MAJOR RUBY_VERSION RUBY_DOWNLOAD_SHA256
-RUN : "${RUBY_MAJOR?}" "${RUBY_VERSION?}" "${RUBY_DOWNLOAD_SHA256?}"
+ARG RUBY_MAJOR RUBY_VERSION
+RUN : "${RUBY_MAJOR?}" "${RUBY_VERSION?}"
 
 # Environment variables required for build.
 ENV LANG=C.UTF-8 \
+    CPPFLAGS=-DENABLE_PATH_CHECK=0 \
+    OPENSSL_VERSION=1.1.1s \
     RUBY_MAJOR=${RUBY_MAJOR} \
     RUBY_VERSION=${RUBY_VERSION} \
-    RUBY_DOWNLOAD_SHA256=${RUBY_DOWNLOAD_SHA256} \
     MAKEFLAGS=-j"$(nproc)"
 
 # Build-time dependencies.
-RUN install_packages build-essential bison dpkg-dev libgdbm-dev ruby wget autoconf zlib1g-dev libreadline-dev checkinstall
+# TODO: remove perl once we no longer need to build OpenSSL.
+RUN install_packages curl ca-certificates g++ libc-dev make bison libgdbm-dev zlib1g-dev libreadline-dev perl
+
+COPY SHA256SUMS /
 
 # TODO: stop building OpenSSL once all apps are on Ruby 3.1+.
 WORKDIR /usr/src/openssl
 RUN set -x; \
-    wget --progress=dot:mega -O openssl.tar.gz "https://www.openssl.org/source/openssl-1.1.1s.tar.gz"; \
-    echo "c5ac01e760ee6ff0dab61d6b2bbd30146724d063eb322180c6f18a6f74e4b6aa openssl.tar.gz" | sha256sum --check; \
-    tar -xf openssl.tar.gz --strip-components=1; \
-    rm openssl.tar.gz; \
+    openssl_tarball="openssl-${OPENSSL_VERSION}.tar.gz"; \
+    curl -fsSLO "https://www.openssl.org/source/${openssl_tarball}"; \
+    grep "${openssl_tarball}" /SHA256SUMS | sha256sum --check --strict; \
+    tar -xf "${openssl_tarball}" --strip-components=1; \
     ./config --prefix=/opt/openssl --openssldir=/opt/openssl no-tests shared zlib; \
     make; \
     make install_sw;  # Avoid building manpages and such.
@@ -32,32 +36,25 @@ RUN set -x; \
 # Build Ruby.
 WORKDIR /usr/src/ruby
 RUN set -x; \
-    \
-    wget --progress=dot:mega -O ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR}/ruby-${RUBY_VERSION}.tar.xz"; \
-    echo "$RUBY_DOWNLOAD_SHA256 *ruby.tar.xz" | sha256sum --check --strict; \
-    \
+    ruby_tarball="ruby-${RUBY_VERSION}.tar.gz"; \
+    curl -fsSLO "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR}/${ruby_tarball}"; \
+    grep "${ruby_tarball}" /SHA256SUMS | sha256sum --check --strict; \
+    tar -xf "${ruby_tarball}" --strip-components=1; \
     mkdir -p /build; \
-    tar -xJf ruby.tar.xz --strip-components=1; \
-    rm ruby.tar.xz; \
-    \
-    { \
-      echo '#define ENABLE_PATH_CHECK 0'; \
-      echo; \
-      cat file.c; \
-    } > file.c.new; \
-    mv file.c.new file.c; \
-    \
-    autoconf; \
-    gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"; \
+    arch="$(uname -m)-linux-gnu"; \
     ./configure \
-      --build="$gnuArch" \
+      --build="${arch}" --host="${arch}" --target="${arch}" \
       --disable-install-doc \
       --enable-shared \
       --with-destdir=/build \
       --with-openssl-dir=/opt/openssl \
-    ; \
-    make -j "$(nproc)"; \
-    make install;
+    make; \
+    make install; \
+    ls -lR /usr/local/bin; \
+    ln -s /build/usr/local/bin/* /usr/local/bin; \
+    ln -s /build/usr/local/lib/* /usr/local/lib; \
+    gem update --system --silent --no-document; \
+    gem cleanup
 
 
 FROM public.ecr.aws/lts/ubuntu:22.04_stable
