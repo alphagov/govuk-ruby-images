@@ -49,6 +49,8 @@ RUN set -x; \
     arch="$(uname -m)-linux-gnu"; \
     ./configure \
       --build="${arch}" --host="${arch}" --target="${arch}" \
+      --sysconfdir=/etc \
+      --mandir=/tmp/throwaway \
       --disable-install-doc \
       --enable-shared \
       --with-openssl-dir=/opt/openssl \
@@ -128,10 +130,12 @@ RUN groupadd -g 1001 app && \
 # Set irb's history path to somewhere writable so that it doesn't complain.
 RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > "$IRBRC"
 
-# Crude smoke test.
+# Crude smoke test: assert that each of the main binaries exits cleanly.
 RUN set -x; \
-    echo 'puts "ok"' | irb; \
-    gem --version; \
-    bundle --version
+    ruby --version; \
+    echo RUBY_DESCRIPTION | irb; \
+    gem env; \
+    bundle version; \
+    rm -r /tmp/*;
 
 LABEL org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
