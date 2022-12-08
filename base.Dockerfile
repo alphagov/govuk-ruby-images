@@ -33,6 +33,13 @@ RUN set -x; \
     make; \
     make install_sw;  # Avoid building manpages and such.
 
+# Build/install Ruby and update the default gems so that we have an up-to-date
+# version of Bundler.
+#
+# TODO: figure out why `gem pristine` seems to be necessary in order to avoid
+# errors like "Ignoring debug-1.4.0 because its extensions are not built." when
+# running irb. Is something ending up in the wrong place during "Building
+# native extensions" in make / make install?
 WORKDIR /usr/src/ruby
 RUN set -x; \
     ruby_tarball="ruby-${RUBY_VERSION}.tar.gz"; \
@@ -48,6 +55,7 @@ RUN set -x; \
     make; \
     make install; \
     gem update --system --silent --no-document; \
+    gem pristine --extensions; \
     gem cleanup;
 
 
