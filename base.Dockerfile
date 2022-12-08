@@ -13,8 +13,7 @@ ENV LANG=C.UTF-8 \
     CPPFLAGS=-DENABLE_PATH_CHECK=0 \
     OPENSSL_VERSION=1.1.1s \
     RUBY_MAJOR=${RUBY_MAJOR} \
-    RUBY_VERSION=${RUBY_VERSION} \
-    MAKEFLAGS=-j"$(nproc)"
+    RUBY_VERSION=${RUBY_VERSION}
 
 # Build-time dependencies.
 # TODO: remove perl once we no longer need to build OpenSSL.
@@ -25,6 +24,7 @@ COPY SHA256SUMS /
 # TODO: stop building OpenSSL once all apps are on Ruby 3.1+.
 WORKDIR /usr/src/openssl
 RUN set -x; \
+    export MAKEFLAGS=-j"$(nproc)"; \
     openssl_tarball="openssl-${OPENSSL_VERSION}.tar.gz"; \
     curl -fsSLO "https://www.openssl.org/source/${openssl_tarball}"; \
     grep "${openssl_tarball}" /SHA256SUMS | sha256sum --check --strict; \
@@ -42,6 +42,7 @@ RUN set -x; \
 # native extensions" in make / make install?
 WORKDIR /usr/src/ruby
 RUN set -x; \
+    export MAKEFLAGS=-j"$(nproc)"; \
     ruby_tarball="ruby-${RUBY_VERSION}.tar.gz"; \
     curl -fsSLO "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR}/${ruby_tarball}"; \
     grep "${ruby_tarball}" /SHA256SUMS | sha256sum --check --strict; \
