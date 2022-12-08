@@ -64,6 +64,7 @@ RUN set -x; \
 
 FROM public.ecr.aws/lts/ubuntu:22.04_stable
 SHELL ["/bin/bash", "-uo", "pipefail", "-c"]
+ARG RUBY_MAJOR
 
 COPY install_packages.sh /usr/sbin/install_packages
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
@@ -78,6 +79,7 @@ RUN rmdir /opt/openssl/certs; \
 # Environment variables common to most GOV.UK apps.
 ENV APP_HOME=/app \
     GEM_HOME=/usr/local/bundle \
+    GEM_PATH=/usr/local/lib/ruby/gems/$RUBY_MAJOR \
     BUNDLE_APP_CONFIG=/usr/local/bundle \
     BUNDLE_PATH=/usr/local/bundle \
     BUNDLE_BIN=/usr/local/bundle/bin \
