@@ -33,39 +33,32 @@ RUN set -x; \
     make; \
     make install_sw;  # Avoid building manpages and such.
 
-# Build Ruby.
 WORKDIR /usr/src/ruby
 RUN set -x; \
     ruby_tarball="ruby-${RUBY_VERSION}.tar.gz"; \
     curl -fsSLO "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR}/${ruby_tarball}"; \
     grep "${ruby_tarball}" /SHA256SUMS | sha256sum --check --strict; \
     tar -xf "${ruby_tarball}" --strip-components=1; \
-    mkdir -p /build; \
     arch="$(uname -m)-linux-gnu"; \
     ./configure \
       --build="${arch}" --host="${arch}" --target="${arch}" \
       --disable-install-doc \
       --enable-shared \
-      --with-destdir=/build \
       --with-openssl-dir=/opt/openssl \
     make; \
     make install; \
-    ls -lR /usr/local/bin; \
-    ln -s /build/usr/local/bin/* /usr/local/bin; \
-    ln -s /build/usr/local/lib/* /usr/local/lib; \
     gem update --system --silent --no-document; \
-    gem cleanup
+    gem cleanup;
 
 
 FROM public.ecr.aws/lts/ubuntu:22.04_stable
 SHELL ["/bin/bash", "-uo", "pipefail", "-c"]
 
-# Helper script for installing Debian packages.
 COPY install_packages.sh /usr/sbin/install_packages
-
-# Ruby binaries from builder image.
-COPY --from=builder /build /
-
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
+COPY --from=builder /usr/local/include/ /usr/local/include/
+COPY --from=builder /usr/local/lib/ /usr/local/lib/
+COPY --from=builder /usr/local/share/ /usr/local/share/
 COPY --from=builder /opt/openssl /opt/openssl
 # Make our locally-built OpenSSL use the system cacert store.
 RUN rmdir /opt/openssl/certs; \
