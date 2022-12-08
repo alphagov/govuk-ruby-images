@@ -126,4 +126,10 @@ RUN groupadd -g 1001 app && \
 # Set irb's history path to somewhere writable so that it doesn't complain.
 RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > "$IRBRC"
 
+# Crude smoke test.
+RUN set -x; \
+    echo 'puts "ok"' | irb; \
+    gem --version; \
+    bundle --version
+
 LABEL org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
