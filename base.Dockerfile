@@ -17,7 +17,7 @@ ENV LANG=C.UTF-8 \
 
 # Build-time dependencies.
 # TODO: remove perl once we no longer need to build OpenSSL.
-RUN install_packages curl ca-certificates g++ libc-dev make bison libgdbm-dev zlib1g-dev libreadline-dev perl
+RUN install_packages curl ca-certificates g++ libc-dev make bison libgdbm-dev zlib1g-dev libreadline-dev libjemalloc-dev perl
 
 COPY SHA256SUMS /
 
@@ -54,6 +54,7 @@ RUN set -x; \
       --mandir=/tmp/throwaway \
       --disable-install-doc \
       --enable-shared \
+      --with-jemalloc \
       --with-openssl-dir=/opt/openssl \
     make; \
     make install; \
@@ -111,17 +112,19 @@ RUN for wrapped_cmd in bundle puma pumactl rails rake "${ruby_bin}"/*; do \
 # `with_tmpdir_for_ruby`.
 ENV TMPDIR_FOR_RUBY_ORIGINAL_PATH=${PATH}
 ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
-# Crude smoke test. Assert that Ruby Dir.tmpdir returns a subdirectory of /tmp.
+
+# Install node.js, yarn and other runtime dependencies.
+RUN install_packages ca-certificates curl gpg libjemalloc-dev libmariadb3 libpq5 tzdata && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor > /usr/share/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x jammy main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    install_packages nodejs && npm install -g yarn
+
+# Crude smoke test of with_tmpdir_for_ruby.sh. Assert that Ruby Dir.tmpdir
+# returns a subdirectory of /tmp.
 RUN set -x; \
     expected=/tmp; \
     actual=$(ruby -e 'require "tmpdir"; d = Dir.tmpdir; Dir.rmdir(d); puts(File.dirname(d))'); \
     [ "${expected}" = "${actual}" ]
-
-# Install node.js, yarn and other runtime dependencies.
-RUN install_packages ca-certificates curl gpg libmariadb3 tzdata libpq5 && \
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor > /usr/share/keyrings/nodesource.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x jammy main" | tee /etc/apt/sources.list.d/nodesource.list && \
-    install_packages nodejs && npm install -g yarn
 
 WORKDIR $APP_HOME
 # Some Rubygems (libraries) assume that they can write to tmp/ within the Rails
