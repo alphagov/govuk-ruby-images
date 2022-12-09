@@ -17,7 +17,11 @@ ENV LANG=C.UTF-8 \
 
 # Build-time dependencies.
 # TODO: remove perl once we no longer need to build OpenSSL.
-RUN install_packages curl ca-certificates g++ libc-dev make bison libgdbm-dev zlib1g-dev libreadline-dev libjemalloc-dev perl
+RUN install_packages curl ca-certificates g++ gpg libc-dev make bison libgdbm-dev zlib1g-dev libreadline-dev libjemalloc-dev perl
+
+# Process the repo signing key for nodesource so we don't have to include gpg
+# in the final image.
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor > /usr/share/keyrings/nodesource.gpg
 
 COPY SHA256SUMS /
 
@@ -114,8 +118,8 @@ ENV TMPDIR_FOR_RUBY_ORIGINAL_PATH=${PATH}
 ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
 
 # Install node.js, yarn and other runtime dependencies.
-RUN install_packages ca-certificates curl gpg libjemalloc-dev libmariadb3 libpq5 tzdata && \
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor > /usr/share/keyrings/nodesource.gpg && \
+COPY --from=builder /usr/share/keyrings/nodesource.gpg /usr/share/keyrings/
+RUN install_packages ca-certificates curl libjemalloc-dev libmariadb3 libpq5 tzdata && \
     echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x jammy main" | tee /etc/apt/sources.list.d/nodesource.list && \
     install_packages nodejs && npm install -g yarn
 
