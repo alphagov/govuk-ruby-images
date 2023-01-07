@@ -91,7 +91,6 @@ ENV APP_HOME=/app \
     PATH=/usr/local/bundle/bin:$PATH \
     IRBRC=/etc/irb.rc \
     XDG_DATA_HOME=/tmp \
-    RAILS_LOG_TO_STDOUT=1 \
     RAILS_ENV=production \
     NODE_ENV=production \
     BUNDLE_WITHOUT="development test cucumber" \
