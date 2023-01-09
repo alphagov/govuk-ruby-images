@@ -8,11 +8,11 @@ on:
         required: true
         type: string
         default: main
-      pushToRegistry:
-        description: Push images to registry
+      noPushToRegistry:
+        description: Build only, skip pushing to registry
         required: true
         type: boolean
-        default: true
+        default: false
   push:
     branches:
       - main
@@ -38,11 +38,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: ${{ inputs.gitRef }}
-      - name: Build and push images
-        if: ${{ inputs.pushToRegistry }}
-        run: ./build.sh ${{ matrix.version }}
       - name: Build images (without pushing to registry)
-        if: ${{ !inputs.pushToRegistry }}
+        if: ${{ inputs.noPushToRegistry }}
         env:
           DRY_RUN: "1"
+        run: ./build.sh ${{ matrix.version }}
+      - name: Build and push images
+        if: ${{ !inputs.noPushToRegistry }}
         run: ./build.sh ${{ matrix.version }}
