@@ -103,6 +103,9 @@ ENV APP_HOME=/app \
     DEBIAN_FRONTEND=noninteractive \
     TZ=Europe/London
 
+# Amazon RDS cert bundle for connecting to managed databases over TLS.
+ADD https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem /etc/ssl/certs/rds-combined-ca-bundle.pem
+
 # Wrap Ruby binaries in a script that sets up a TMPDIR that Ruby will accept.
 # TODO: remove this when Ruby allows disabling its permissions checks on /tmp.
 ARG ruby_bin=/usr/local/bin
