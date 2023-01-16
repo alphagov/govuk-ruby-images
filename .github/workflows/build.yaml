@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        version: ['2_7', '3_0', '3_1']
+        version: ['2_7', '3_1']
     permissions:
       packages: write
     steps:
