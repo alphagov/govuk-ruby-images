@@ -15,19 +15,23 @@ ENV LANG=C.UTF-8 \
     RUBY_MAJOR=${RUBY_MAJOR} \
     RUBY_VERSION=${RUBY_VERSION}
 
-# Build-time dependencies.
+# Build-time dependencies for Ruby.
 # TODO: remove perl once we no longer need to build OpenSSL.
-RUN install_packages curl ca-certificates g++ gpg libc-dev make bison libgdbm-dev zlib1g-dev libreadline-dev libjemalloc-dev perl
+# TODO: remove curl and gpg once downloads are done in the build script.
+RUN install_packages curl ca-certificates pkg-config g++ gpg libc-dev make bison patch libdb-dev libffi-dev libgdbm-dev libgmp-dev libreadline-dev libssl-dev libyaml-dev zlib1g-dev uuid-dev libjemalloc-dev perl
 
 # Process the repo signing key for nodesource so we don't have to include gpg
 # in the final image.
+# TODO: do this externally, in the build script.
 RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor > /usr/share/keyrings/nodesource.gpg
 
+# TODO: do the download and verification externally, in the build script.
 COPY SHA256SUMS /
 
-# TODO: stop building OpenSSL once all apps are on Ruby 3.1+.
+# TODO: remove the OpenSSL build once we're rid of Ruby 2.7.
 WORKDIR /usr/src/openssl
 RUN set -x; \
+    [[ "$RUBY_MAJOR" > "3.0" ]] && exit 0; \
     export MAKEFLAGS=-j"$(nproc)"; \
     openssl_tarball="openssl-${OPENSSL_VERSION}.tar.gz"; \
     curl -fsSLO "https://www.openssl.org/source/${openssl_tarball}"; \
@@ -59,12 +63,15 @@ RUN set -x; \
       --disable-install-doc \
       --enable-shared \
       --with-jemalloc \
-      --with-openssl-dir=/opt/openssl \
+      $([[ -d /opt/openssl ]] && echo --with-openssl-dir=/opt/openssl) \
+    ; \
     make; \
     make install; \
     gem update --system --silent --no-document; \
     gem pristine --extensions; \
     gem cleanup;
+# Ensure that /opt/openssl exists so that the COPY below doesn't fail.
+WORKDIR /opt/openssl
 
 
 FROM public.ecr.aws/lts/ubuntu:22.04_stable
@@ -123,7 +130,7 @@ ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
 
 # Install node.js, yarn and other runtime dependencies.
 COPY --from=builder /usr/share/keyrings/nodesource.gpg /usr/share/keyrings/
-RUN install_packages ca-certificates curl libjemalloc-dev libmariadb3 libpq5 tzdata && \
+RUN install_packages ca-certificates curl libjemalloc-dev libgdbm6 libyaml-0-2 libmariadb3 libpq5 tzdata && \
     echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x jammy main" | tee /etc/apt/sources.list.d/nodesource.list && \
     install_packages nodejs && npm install -g yarn
 
@@ -132,6 +139,7 @@ RUN install_packages ca-certificates curl libjemalloc-dev libmariadb3 libpq5 tzd
 RUN set -x; \
     expected=/tmp; \
     actual=$(ruby -e 'require "tmpdir"; d = Dir.tmpdir; Dir.rmdir(d); puts(File.dirname(d))'); \
+    rm -fr /tmp/*; \
     [ "${expected}" = "${actual}" ]
 
 WORKDIR $APP_HOME
@@ -144,10 +152,12 @@ RUN groupadd -g 1001 app && \
 # Set irb's history path to somewhere writable so that it doesn't complain.
 RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > "$IRBRC"
 
-# Crude smoke test: assert that each of the main binaries exits cleanly.
+# Crude smoke test: assert that each of the main binaries exits cleanly and
+# that the openssl gem loads.
 RUN set -x; \
     ruby --version; \
     echo RUBY_DESCRIPTION | irb; \
+    echo 'puts OpenSSL::OPENSSL_VERSION' | ruby -r openssl \
     gem env; \
     bundle version; \
     rm -r /tmp/*;
