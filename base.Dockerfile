@@ -31,8 +31,8 @@ COPY SHA256SUMS /
 # TODO: remove the OpenSSL build once we're rid of Ruby 2.7.
 WORKDIR /usr/src/openssl
 RUN set -x; \
-    [[ "$RUBY_MAJOR" > "3.0" ]] && exit 0; \
-    export MAKEFLAGS=-j"$(nproc)"; \
+    [[ "$RUBY_MAJOR" != '2.7' ]] && exit 0; \
+    MAKEFLAGS=-j"$(nproc)"; export MAKEFLAGS; \
     openssl_tarball="openssl-${OPENSSL_VERSION}.tar.gz"; \
     curl -fsSLO "https://www.openssl.org/source/${openssl_tarball}"; \
     grep "${openssl_tarball}" /SHA256SUMS | sha256sum --check --strict; \
@@ -50,7 +50,7 @@ RUN set -x; \
 # native extensions" in make / make install?
 WORKDIR /usr/src/ruby
 RUN set -x; \
-    export MAKEFLAGS=-j"$(nproc)"; \
+    MAKEFLAGS=-j"$(nproc)"; export MAKEFLAGS; \
     ruby_tarball="ruby-${RUBY_VERSION}.tar.gz"; \
     curl -fsSLO "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR}/${ruby_tarball}"; \
     grep "${ruby_tarball}" /SHA256SUMS | sha256sum --check --strict; \
@@ -63,7 +63,7 @@ RUN set -x; \
       --disable-install-doc \
       --enable-shared \
       --with-jemalloc \
-      $([[ -d /opt/openssl ]] && echo --with-openssl-dir=/opt/openssl) \
+      "$([[ -d /opt/openssl ]] && echo --with-openssl-dir=/opt/openssl)" \
     ; \
     make; \
     make install; \
@@ -132,7 +132,7 @@ ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
 COPY --from=builder /usr/share/keyrings/nodesource.gpg /usr/share/keyrings/
 RUN install_packages ca-certificates curl libjemalloc-dev libgdbm6 libyaml-0-2 libmariadb3 libpq5 tzdata && \
     echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x jammy main" | tee /etc/apt/sources.list.d/nodesource.list && \
-    install_packages nodejs && npm install -g yarn
+    install_packages nodejs && npm install -g yarn@1
 
 # Crude smoke test of with_tmpdir_for_ruby.sh. Assert that Ruby Dir.tmpdir
 # returns a subdirectory of /tmp.
