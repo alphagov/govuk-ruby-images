@@ -18,7 +18,7 @@ ENV LANG=C.UTF-8 \
 # Build-time dependencies for Ruby.
 # TODO: remove perl once we no longer need to build OpenSSL.
 # TODO: remove curl and gpg once downloads are done in the build script.
-RUN install_packages curl ca-certificates pkg-config g++ gpg libc-dev make bison patch libdb-dev libffi-dev libgdbm-dev libgmp-dev libreadline-dev libssl-dev libyaml-dev zlib1g-dev uuid-dev libjemalloc-dev perl
+RUN install_packages curl ca-certificates g++ gpg libc-dev make bison patch libdb-dev libffi-dev libgdbm-dev libgmp-dev libreadline-dev libssl-dev libyaml-dev zlib1g-dev uuid-dev libjemalloc-dev perl
 
 # Process the repo signing key for nodesource so we don't have to include gpg
 # in the final image.
