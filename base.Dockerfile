@@ -28,10 +28,9 @@ RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dear
 # TODO: do the download and verification externally, in the build script.
 COPY SHA256SUMS /
 
-# TODO: remove the OpenSSL build once we're rid of Ruby 2.7.
+# TODO: remove OpenSSL build once https://www.github.com/ruby/openssl/issues/369 is fixed.
 WORKDIR /usr/src/openssl
 RUN set -x; \
-    [[ "$RUBY_MAJOR" != '2.7' ]] && exit 0; \
     MAKEFLAGS=-j"$(nproc)"; export MAKEFLAGS; \
     openssl_tarball="openssl-${OPENSSL_VERSION}.tar.gz"; \
     curl -fsSLO "https://www.openssl.org/source/${openssl_tarball}"; \
@@ -63,15 +62,13 @@ RUN set -x; \
       --disable-install-doc \
       --enable-shared \
       --with-jemalloc \
-      "$([[ -d /opt/openssl ]] && echo --with-openssl-dir=/opt/openssl)" \
+      --with-openssl-dir=/opt/openssl \
     ; \
     make; \
     make install; \
     gem update --system --silent --no-document; \
     gem pristine --extensions; \
     gem cleanup;
-# Ensure that /opt/openssl exists so that the COPY below doesn't fail.
-WORKDIR /opt/openssl
 
 
 FROM public.ecr.aws/lts/ubuntu:22.04_stable
