@@ -61,7 +61,6 @@ RUN set -x; \
       --mandir=/tmp/throwaway \
       --disable-install-doc \
       --enable-shared \
-      --with-jemalloc \
       --with-openssl-dir=/opt/openssl \
     ; \
     make; \
@@ -106,6 +105,8 @@ ENV APP_HOME=/app \
     GOVUK_PROMETHEUS_EXPORTER=true \
     DEBIAN_FRONTEND=noninteractive \
     TZ=Europe/London
+# Use jemalloc by default.
+ENV LD_PRELOAD=libjemalloc.so
 
 # Amazon RDS cert bundle for connecting to managed databases over TLS.
 ADD https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem /etc/ssl/certs/rds-combined-ca-bundle.pem
