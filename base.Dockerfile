@@ -11,7 +11,7 @@ RUN : "${RUBY_MAJOR?}" "${RUBY_VERSION?}"
 # Environment variables required for build.
 ENV LANG=C.UTF-8 \
     CPPFLAGS=-DENABLE_PATH_CHECK=0 \
-    OPENSSL_VERSION=1.1.1s \
+    OPENSSL_VERSION=1.1.1t \
     RUBY_MAJOR=${RUBY_MAJOR} \
     RUBY_VERSION=${RUBY_VERSION}
 

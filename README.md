@@ -40,6 +40,6 @@ To add hashes for new Ruby/OpenSSL versions:
 
 1. Download the new source tarball(s).
 
-1. Run `sha256sum *gz >>SHA256SUMS`.
+1. Run `sha256sum *gz >>SHA256SUMS`. If your system doesn't have `sha256sum`, try `shasum -a256`.
 
-1. Compare the new hashes with those listed on the [Ruby releases page](https://www.ruby-lang.org/en/downloads/releases/) and [OpenSSL downloads page](https://www.openssl.org/source/). Where there is a choice of compression/archive formats, use the `.tar.gz`.
+1. Compare the new hashes with those listed on the [Ruby downloads page](https://www.ruby-lang.org/en/downloads/) and [OpenSSL downloads page](https://www.openssl.org/source/).
