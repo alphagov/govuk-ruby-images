@@ -105,8 +105,6 @@ ENV APP_HOME=/app \
     GOVUK_PROMETHEUS_EXPORTER=true \
     DEBIAN_FRONTEND=noninteractive \
     TZ=Europe/London
-# Use jemalloc by default.
-ENV LD_PRELOAD=libjemalloc.so
 
 # Amazon RDS cert bundle for connecting to managed databases over TLS.
 ADD https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem /etc/ssl/certs/rds-combined-ca-bundle.pem
@@ -131,6 +129,9 @@ COPY --from=builder /usr/share/keyrings/nodesource.gpg /usr/share/keyrings/
 RUN install_packages ca-certificates curl libjemalloc-dev libgdbm6 libyaml-0-2 libmariadb3 libpq5 tzdata && \
     echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x jammy main" | tee /etc/apt/sources.list.d/nodesource.list && \
     install_packages nodejs && npm install -g yarn@1
+
+# Use jemalloc by default.
+ENV LD_PRELOAD=libjemalloc.so
 
 # Crude smoke test of with_tmpdir_for_ruby.sh. Assert that Ruby Dir.tmpdir
 # returns a subdirectory of /tmp.
