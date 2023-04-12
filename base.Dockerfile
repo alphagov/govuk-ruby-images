@@ -157,7 +157,7 @@ RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > "$IRBRC"
 RUN set -x; \
     ruby --version; \
     echo RUBY_DESCRIPTION | irb; \
-    echo 'puts OpenSSL::OPENSSL_VERSION' | ruby -r openssl \
+    echo 'puts OpenSSL::OPENSSL_VERSION' | ruby -r openssl; \
     gem env; \
     bundle version; \
     rm -r /tmp/*;
