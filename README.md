@@ -43,3 +43,8 @@ To add hashes for new Ruby/OpenSSL versions:
 1. Run `sha256sum *gz >>SHA256SUMS`. If your system doesn't have `sha256sum`, try `shasum -a256`.
 
 1. Compare the new hashes with those listed on the [Ruby downloads page](https://www.ruby-lang.org/en/downloads/) and [OpenSSL downloads page](https://www.openssl.org/source/).
+
+
+## Team
+
+[GOV.UK Platform Engineering team](https://github.com/orgs/alphagov/teams/gov-uk-platform-engineering) looks after this repo. If you're inside GDS, you can find us in [#govuk-platform-engineering](https://gds.slack.com/channels/govuk-platform-engineering) or view our [kanban board](https://trello.com/b/u4FCzm53/).
