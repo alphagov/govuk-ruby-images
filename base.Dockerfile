@@ -127,8 +127,10 @@ ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
 # Install node.js, yarn and other runtime dependencies.
 COPY --from=builder /usr/share/keyrings/nodesource.gpg /usr/share/keyrings/
 RUN install_packages ca-certificates curl libjemalloc-dev libgdbm6 libyaml-0-2 libmariadb3 libpq5 tzdata; \
-    echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x jammy main" | tee /etc/apt/sources.list.d/nodesource.list; \
+    echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x jammy main" | tee /etc/apt/sources.list.d/nodesource.list; \
     install_packages nodejs; \
+    echo -n node version:\ ; node -v; \
+    echo -n npm version:\ ; npm -v; \
     npm install -g yarn@1
 
 # Use jemalloc by default.
