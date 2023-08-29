@@ -22,6 +22,15 @@ FROM ghcr.io/alphagov/govuk-ruby-base:3.0
 # your app image steps here
 ```
 
+## Common problems and resolutions
+
+`ERROR: failed to solve: cannot copy to non-directory: /var/lib/docker/overlay2/.../merged/app/tmp`
+
+Add `tmp/` to your `.dockerignore`. This is necessary because we symlink
+`$APP_HOME/tmp` to `/tmp` as a workaround for some badly-behaved gems that
+assume they can write to `Path.join(Rails.root, 'tmp')` so that we can run with
+`readOnlyRootFilesystem`.
+
 
 ## Managing Ruby versions
 
