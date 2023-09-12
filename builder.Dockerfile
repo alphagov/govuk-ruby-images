@@ -1,7 +1,7 @@
 ARG RUBY_MAJOR
 FROM ghcr.io/alphagov/govuk-ruby-base:${RUBY_MAJOR}
 
-RUN install_packages g++ libc-dev make git gpg libmariadb-dev-compat libpq-dev xz-utils
+RUN install_packages g++ libc-dev libssl-dev make git gpg libmariadb-dev-compat libpq-dev xz-utils
 
 # Environment variables to make build cleaner and faster
 ENV BUNDLE_IGNORE_MESSAGES=1 \

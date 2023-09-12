@@ -11,14 +11,12 @@ RUN : "${RUBY_MAJOR?}" "${RUBY_VERSION?}"
 # Environment variables required for build.
 ENV LANG=C.UTF-8 \
     CPPFLAGS=-DENABLE_PATH_CHECK=0 \
-    OPENSSL_VERSION=1.1.1v \
     RUBY_MAJOR=${RUBY_MAJOR} \
     RUBY_VERSION=${RUBY_VERSION}
 
 # Build-time dependencies for Ruby.
-# TODO: remove perl once we no longer need to build OpenSSL.
 # TODO: remove curl and gpg once downloads are done in the build script.
-RUN install_packages curl ca-certificates g++ gpg libc-dev make bison patch libdb-dev libffi-dev libgdbm-dev libgmp-dev libreadline-dev libyaml-dev zlib1g-dev uuid-dev libjemalloc-dev perl
+RUN install_packages curl ca-certificates g++ gpg libc-dev make bison patch libdb-dev libffi-dev libgdbm-dev libgmp-dev libreadline-dev libssl-dev libyaml-dev zlib1g-dev uuid-dev libjemalloc-dev
 
 # Process the repo signing key for nodesource so we don't have to include gpg
 # in the final image.
@@ -27,18 +25,6 @@ RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dear
 
 # TODO: do the download and verification externally, in the build script.
 COPY SHA256SUMS /
-
-# TODO: remove OpenSSL build once https://www.github.com/ruby/openssl/issues/369 is fixed.
-WORKDIR /usr/src/openssl
-RUN set -x; \
-    MAKEFLAGS=-j"$(nproc)"; export MAKEFLAGS; \
-    openssl_tarball="openssl-${OPENSSL_VERSION}.tar.gz"; \
-    curl -fsSLO "https://www.openssl.org/source/${openssl_tarball}"; \
-    grep "${openssl_tarball}" /SHA256SUMS | sha256sum --check --strict; \
-    tar -xf "${openssl_tarball}" --strip-components=1; \
-    ./config --prefix=/opt/openssl --openssldir=/opt/openssl no-tests shared zlib; \
-    make; \
-    make install_sw;  # Avoid building manpages and such.
 
 # Build/install Ruby and update the default gems so that we have an up-to-date
 # version of Bundler.
@@ -52,7 +38,7 @@ RUN set -x; \
     MAKEFLAGS=-j"$(nproc)"; export MAKEFLAGS; \
     ruby_tarball="ruby-${RUBY_VERSION}.tar.gz"; \
     curl -fsSLO "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR}/${ruby_tarball}"; \
-    grep "${ruby_tarball}" /SHA256SUMS | sha256sum --check --strict; \
+    grep -F "${ruby_tarball}" /SHA256SUMS | sha256sum --check --strict; \
     tar -xf "${ruby_tarball}" --strip-components=1; \
     arch="$(uname -m)-linux-gnu"; \
     ./configure \
@@ -61,7 +47,6 @@ RUN set -x; \
       --mandir=/tmp/throwaway \
       --disable-install-doc \
       --enable-shared \
-      --with-openssl-dir=/opt/openssl \
     ; \
     make; \
     make install; \
@@ -79,10 +64,6 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 COPY --from=builder /usr/local/include/ /usr/local/include/
 COPY --from=builder /usr/local/lib/ /usr/local/lib/
 COPY --from=builder /usr/local/share/ /usr/local/share/
-COPY --from=builder /opt/openssl /opt/openssl
-# Make our locally-built OpenSSL use the system cacert store.
-RUN rm -fr /opt/openssl/certs; \
-    ln -s /etc/ssl/certs /opt/openssl/certs
 
 # Environment variables common to most GOV.UK apps.
 ENV APP_HOME=/app \
