@@ -5,14 +5,18 @@ jobs:
     name: Shellcheck
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        show-progress: false
     - name: Run ShellCheck
       uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38  # 2.0.0
   hadolint:
     name: Hadolint
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        show-progress: false
     - uses: jbergstroem/hadolint-gh-action@eac45b98f6d761309202bd201205a8f8c988bfad  # v1.11.0
       with:
         dockerfile: '**/*Dockerfile'
