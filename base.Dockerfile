@@ -115,7 +115,7 @@ RUN install_packages ca-certificates curl libjemalloc-dev libgdbm6 libyaml-0-2 \
     install_packages nodejs; \
     echo -n node version:\ ; node -v; \
     echo -n npm version:\ ; npm -v; \
-    npm install -g yarn@1
+    npm install -g yarn@1.22.19
 
 # Use jemalloc by default.
 ENV LD_PRELOAD=libjemalloc.so
