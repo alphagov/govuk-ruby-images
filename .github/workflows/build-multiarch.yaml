@@ -1,0 +1,136 @@
+name: Build and push multi-arch images
+
+on:
+  workflow_dispatch:
+    inputs:
+      gitRef:
+        description: Commit, tag or branch name to deploy
+        required: true
+        type: string
+        default: main
+      pushToRegistry:
+        description: Push to Registry. Set to false to test the build without pushing.
+        required: true
+        type: boolean
+        default: false
+      buildPlatforms:
+        required: false
+        type: string
+        default: linux/amd64,linux/arm64
+  push:
+    branches:
+      - GIFT-multiarch
+
+jobs:
+  build_and_push_multiarch:
+    name: Build multi-arch ruby_${{ matrix.version }} images and push to GHCR
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        version: [
+          {rubyver: ['3', '1', '4'], extra: ''},
+          {rubyver: ['3', '2', '2'], extra: 'latest'},
+        ]
+    permissions:
+      packages: write
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout from GitHub
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{ inputs.gitRef }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+  
+      - name: Set up Docker BuildX
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Calculate Image Tags
+        id: calculate-image-tags
+        run: |
+          CREATED_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "createdDate=${CREATED_DATE}" >> $GITHUB_OUTPUT
+          
+      - name: Generate Base Image Metadata
+        uses: docker/metadata-action@v5.5.0
+        id: base-image-metadata
+        with:
+          flavor: |
+            latest=${{ matrix.version.extra == 'latest' }}
+          images: |
+            ghcr.io/alphagov/govuk-ruby-base
+          labels: |
+            org.opencontainers.image.title=govuk-ruby-base
+            org.opencontainers.image.authors=GOV.UK Platform Engineering
+            org.opencontainers.image.description=Base Image for GOV.UK Ruby-based Apps
+            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
+            org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
+            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
+            org.opencontainers.image.vendor=GDS
+          tags: |
+            type=semver,pattern={{raw}},value=${{ join(matrix.version.rubyver, '.') }}
+            type=sha,enable=true,priority=100,prefix=sha-,suffix=,format=short
+
+      - name: Generate Builder Image Metadata
+        uses: docker/metadata-action@v5.5.0
+        id: builder-image-metadata
+        with:
+          flavor: |
+            latest=${{ matrix.version.extra == 'latest' }}
+          images: |
+            ghcr.io/alphagov/govuk-ruby-builder
+          labels: |
+            org.opencontainers.image.title=govuk-ruby-builder
+            org.opencontainers.image.authors=GOV.UK Platform Engineering
+            org.opencontainers.image.description=Builder Image for GOV.UK Ruby-based Apps
+            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
+            org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
+            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
+            org.opencontainers.image.vendor=GDS
+          tags: |
+            type=semver,pattern={{raw}},value=${{ join(matrix.version.rubyver, '.') }}
+            type=sha,enable=true,priority=100,prefix=sha-,suffix=,format=short
+
+      - name: Build Base Image
+        id: build-base-image
+        uses: docker/build-push-action@v5
+        with:
+          file: base.Dockerfile
+          context: .
+          push: ${{ inputs.pushToRegistry }}
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
+          tags: |
+            gchr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            gchr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ join(matrix.version.rubyver, '.') }}
+            ${{ matrix.version.extra }}
+
+      - name: Build Builder Image
+        id: build-builder-image
+        uses: docker/build-push-action@v5
+        with:
+          file: base.Dockerfile
+          context: .
+          push: ${{ inputs.pushToRegistry }}
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
+            OWNER=${{ github.repository_owner }}
+          tags: |
+            gchr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            gchr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ join(matrix.version.rubyver, '.') }}
+            ${{ matrix.version.extra }}
+    

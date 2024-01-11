@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lts/ubuntu:22.04_stable AS builder
+FROM --platform=$TARGETPLATFORM public.ecr.aws/lts/ubuntu:22.04_stable AS builder
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 
 # Helper script for installing Debian packages.
@@ -55,7 +55,7 @@ RUN set -x; \
     gem cleanup;
 
 
-FROM public.ecr.aws/lts/ubuntu:22.04_stable
+FROM --platform=$TARGETPLATFORM public.ecr.aws/lts/ubuntu:22.04_stable
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 ARG RUBY_MAJOR
 
