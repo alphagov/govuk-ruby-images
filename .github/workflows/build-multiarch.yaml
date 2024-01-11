@@ -44,7 +44,7 @@ jobs:
       - name: Checkout from GitHub
         uses: actions/checkout@v4.1.1
         with:
-          ref: ${{ inputs.gitRef }}
+          ref: ${{ inputs.gitRef || github.ref }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -107,7 +107,7 @@ jobs:
         with:
           file: base.Dockerfile
           context: .
-          push: ${{ inputs.pushToRegistry }}
+          push: ${{ inputs.pushToRegistry || false }}
           platforms: linux/amd64,linux/arm64
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
@@ -123,7 +123,7 @@ jobs:
         with:
           file: base.Dockerfile
           context: .
-          push: ${{ inputs.pushToRegistry }}
+          push: ${{ inputs.pushToRegistry || false }}
           platforms: linux/amd64,linux/arm64
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
