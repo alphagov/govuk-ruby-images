@@ -59,7 +59,7 @@ jobs:
           flavor: |
             latest=${{ matrix.version.extra == 'latest' }}
           images: |
-            ghcr.io/alphagov/govuk-ruby-base
+            ghcr.io/${{ github.repository_owner }}/govuk-ruby-base
           labels: |
             org.opencontainers.image.title=govuk-ruby-base
             org.opencontainers.image.authors=GOV.UK Platform Engineering
@@ -81,7 +81,7 @@ jobs:
           flavor: |
             latest=${{ matrix.version.extra == 'latest' }}
           images: |
-            ghcr.io/alphagov/govuk-ruby-builder
+            ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder
           labels: |
             org.opencontainers.image.title=govuk-ruby-builder
             org.opencontainers.image.authors=GOV.UK Platform Engineering
@@ -107,10 +107,8 @@ jobs:
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ join(matrix.version.rubyver, '.') }}
-            ${{ matrix.version.extra }}
+          tags: ${{ steps.base-image-metadata.outputs.tags }}
+          labels: ${{ steps.base-image-metadata.outputs.labels }}
 
       - name: Build Builder Image
         id: build-builder-image
@@ -124,10 +122,8 @@ jobs:
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
             OWNER=${{ github.repository_owner }}
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ join(matrix.version.rubyver, '.') }}
-            ${{ matrix.version.extra }}
+          tags: ${{ steps.builder-image-metadata.outputs.tags }}
+          labels: ${{ steps.builder-image-metadata.outputs.labels }}
 
   build_and_push_arm64:
     name: Build ruby_${{ join(matrix.version.rubyver, '.') }} for ARM64 and push to GHCR
@@ -175,7 +171,7 @@ jobs:
           flavor: |
             latest=${{ matrix.version.extra == 'latest' }}
           images: |
-            ghcr.io/alphagov/govuk-ruby-base
+            ghcr.io/${{ github.repository_owner }}/govuk-ruby-base
           labels: |
             org.opencontainers.image.title=govuk-ruby-base
             org.opencontainers.image.authors=GOV.UK Platform Engineering
@@ -196,7 +192,7 @@ jobs:
           flavor: |
             latest=${{ matrix.version.extra == 'latest' }}
           images: |
-            ghcr.io/alphagov/govuk-ruby-builder
+            ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder
           labels: |
             org.opencontainers.image.title=govuk-ruby-builder
             org.opencontainers.image.authors=GOV.UK Platform Engineering
@@ -222,10 +218,8 @@ jobs:
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ join(matrix.version.rubyver, '.') }}
-            ${{ matrix.version.extra }}
+          tags: ${{ steps.base-image-metadata.outputs.tags }}
+          labels: ${{ steps.base-image-metadata.outputs.labels }}
 
       - name: Build Builder Image
         id: build-builder-image
@@ -239,10 +233,8 @@ jobs:
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
             OWNER=${{ github.repository_owner }}
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ join(matrix.version.rubyver, '.') }}
-            ${{ matrix.version.extra }}
+          tags: ${{ steps.builder-image-metadata.outputs.tags }}
+          labels: ${{ steps.builder-image-metadata.outputs.labels }}
 
   create_docker_manifests:
     name: Create Docker Manifests for Ruby ${{ join(matrix.version.rubyver, '.') }} Images
