@@ -12,4 +12,6 @@ ENV BUNDLE_IGNORE_MESSAGES=1 \
     MAKEFLAGS="-j12"
 RUN echo 'gem: --no-document' >> /etc/gemrc
 
+ENV SECRET_KEY_BASE_DUMMY=1
+
 LABEL org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
