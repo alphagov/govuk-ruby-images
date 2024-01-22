@@ -32,14 +32,14 @@ jobs:
       packages: write
     steps:
       - name: Login to GHCR
-        uses: docker/login-action@v3.0.0
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout from GitHub
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.gitRef || github.ref }}
   
@@ -54,7 +54,7 @@ jobs:
           echo "createdDate=${CREATED_DATE}" >> $GITHUB_OUTPUT
           
       - name: Generate Base Image Metadata
-        uses: docker/metadata-action@v5.5.0
+        uses: docker/metadata-action@v5
         id: base-image-metadata
         with:
           flavor: |
@@ -76,7 +76,7 @@ jobs:
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-amd64
 
       - name: Generate Builder Image Metadata
-        uses: docker/metadata-action@v5.5.0
+        uses: docker/metadata-action@v5
         id: builder-image-metadata
         with:
           flavor: |
@@ -142,14 +142,14 @@ jobs:
       packages: write
     steps:
       - name: Login to GHCR
-        uses: docker/login-action@v3.0.0
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout from GitHub
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.gitRef || github.ref }}
 
@@ -169,7 +169,7 @@ jobs:
           echo "createdDate=${CREATED_DATE}" >> $GITHUB_OUTPUT
           
       - name: Generate Base Image Metadata
-        uses: docker/metadata-action@v5.5.0
+        uses: docker/metadata-action@v5
         id: base-image-metadata
         with:
           flavor: |
@@ -191,7 +191,7 @@ jobs:
             type=sha,enable=true,priority=100,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-arm64,format=long
 
       - name: Generate Builder Image Metadata
-        uses: docker/metadata-action@v5.5.0
+        uses: docker/metadata-action@v5
         id: builder-image-metadata
         with:
           flavor: |
@@ -261,14 +261,14 @@ jobs:
       packages: write
     steps:
       - name: Login to GHCR
-        uses: docker/login-action@v3.0.0
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout from GitHub
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.gitRef || github.ref }}
       

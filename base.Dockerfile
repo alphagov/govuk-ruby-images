@@ -155,5 +155,3 @@ RUN set -x; \
     gem env; \
     bundle version; \
     rm -r /tmp/*;
-
-LABEL org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
