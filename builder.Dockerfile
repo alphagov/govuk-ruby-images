@@ -13,6 +13,8 @@ ENV BUNDLE_IGNORE_MESSAGES=1 \
     MAKEFLAGS="-j12"
 RUN echo 'gem: --no-document' >> /etc/gemrc
 
+ENV SECRET_KEY_BASE_DUMMY=1
+
 LABEL org.opencontainers.image.title="govuk-ruby-builder"
 LABEL org.opencontainers.image.authors="GOV.UK Platform Engineering"
 LABEL org.opencontainers.image.description="Builder Image for GOV.UK Ruby-based Apps"
