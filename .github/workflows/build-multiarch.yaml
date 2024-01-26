@@ -256,7 +256,7 @@ jobs:
       matrix:
         version: [
           {rubyver: ['3', '1', '4'], extra: ''},
-          {rubyver: ['3', '2', '2'], extra: ''},
+          {rubyver: ['3', '2', '3'], extra: ''},
           {rubyver: ['3', '3', '0'], extra: 'latest'},
         ]
     permissions:
