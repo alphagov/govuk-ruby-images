@@ -6,14 +6,15 @@ SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 COPY install_packages.sh /usr/sbin/install_packages
 
 # Fail fast if mandatory build args are missing.
-ARG RUBY_MAJOR RUBY_VERSION
+ARG RUBY_MAJOR RUBY_VERSION RUBY_CHECKSUM
 RUN : "${RUBY_MAJOR?}" "${RUBY_VERSION?}"
 
 # Environment variables required for build.
 ENV LANG=C.UTF-8 \
     CPPFLAGS=-DENABLE_PATH_CHECK=0 \
     RUBY_MAJOR=${RUBY_MAJOR} \
-    RUBY_VERSION=${RUBY_VERSION}
+    RUBY_VERSION=${RUBY_VERSION} \
+    RUBY_CHECKSUM=${RUBY_CHECKSUM} 
 
 # Build-time dependencies for Ruby.
 # TODO: remove curl and gpg once downloads are done in the build script.
@@ -24,8 +25,6 @@ RUN install_packages curl ca-certificates g++ gpg libc-dev make bison patch libd
 # TODO: do this externally, in the build script.
 RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor > /usr/share/keyrings/nodesource.gpg
 
-# TODO: do the download and verification externally, in the build script.
-COPY SHA256SUMS /
 
 # Build/install Ruby and update the default gems so that we have an up-to-date
 # version of Bundler.
@@ -39,7 +38,7 @@ RUN set -x; \
     MAKEFLAGS=-j"$(nproc)"; export MAKEFLAGS; \
     ruby_tarball="ruby-${RUBY_VERSION}.tar.gz"; \
     curl -fsSLO "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR}/${ruby_tarball}"; \
-    grep -F "${ruby_tarball}" /SHA256SUMS | sha256sum --check --strict; \
+    echo "${RUBY_CHECKSUM} ${ruby_tarball}" | sha256sum --check --strict --status; \
     tar -xf "${ruby_tarball}" --strip-components=1; \
     arch="$(uname -m)-linux-gnu"; \
     ./configure \

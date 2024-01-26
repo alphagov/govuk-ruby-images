@@ -16,20 +16,29 @@ on:
   push:
     branches:
       - main
+      - dj-maisy/test_shared_matrix
   schedule:
     - cron: '0 3 * * *'
 
 jobs:
+  configure_builds:
+    name: Configure Build Settings (from config.json)
+    runs-on: ubuntu-22.04
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Set Matrix Data
+        id: set-matrix
+        run: echo "matrix=$(jq -c . < .github/config.json)" >> $GITHUB_OUTPUT
+
   build_and_push_amd64:
     name: Build ruby_${{ join(matrix.version.rubyver, '.') }} for AMD64 and push to GHCR
     runs-on: ubuntu-22.04
+    needs: configure_builds
     strategy:
-      matrix:
-        version: [
-          {rubyver: ['3', '1', '4'], extra: ''},
-          {rubyver: ['3', '2', '3'], extra: ''},
-          {rubyver: ['3', '3', '0'], extra: 'latest'},
-        ]
+      matrix: ${{ fromJson(needs.configure_builds.outputs.matrix)}}
     permissions:
       packages: write
     steps:
@@ -111,6 +120,7 @@ jobs:
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
+            RUBY_CHECKSUM=${{ matrix.version.checksum }}
           tags: ${{ steps.base-image-metadata.outputs.tags }}
           labels: ${{ steps.base-image-metadata.outputs.labels }}
 
@@ -133,13 +143,9 @@ jobs:
   build_and_push_arm64:
     name: Build ruby_${{ join(matrix.version.rubyver, '.') }} for ARM64 and push to GHCR
     runs-on: ubuntu-22.04
+    needs: configure_builds
     strategy:
-      matrix:
-        version: [
-          {rubyver: ['3', '1', '4'], extra: ''},
-          {rubyver: ['3', '2', '3'], extra: ''},
-          {rubyver: ['3', '3', '0'], extra: 'latest'},
-        ]
+      matrix: ${{ fromJson(needs.configure_builds.outputs.matrix)}}
     permissions:
       packages: write
     steps:
@@ -226,6 +232,7 @@ jobs:
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
+            RUBY_CHECKSUM=${{ matrix.version.checksum }}
           tags: ${{ steps.base-image-metadata.outputs.tags }}
           labels: ${{ steps.base-image-metadata.outputs.labels }}
 
@@ -249,16 +256,12 @@ jobs:
     if: ${{ inputs.pushToRegistry || true }}
     name: Create Docker Manifests for Ruby ${{ join(matrix.version.rubyver, '.') }} Images
     needs:
+      - configure_builds
       - build_and_push_amd64
       - build_and_push_arm64
     runs-on: ubuntu-22.04
     strategy:
-      matrix:
-        version: [
-          {rubyver: ['3', '1', '4'], extra: ''},
-          {rubyver: ['3', '2', '3'], extra: ''},
-          {rubyver: ['3', '3', '0'], extra: 'latest'},
-        ]
+      matrix: ${{ fromJson(needs.configure_builds.outputs.matrix)}}
     permissions:
       packages: write
     steps:
