@@ -15,7 +15,9 @@ on:
         default: true
   push:
     branches:
-      - GIFT-multiarch
+      - main
+  schedule:
+    - cron: '0 3 * * *'
 
 jobs:
   build_and_push_amd64:

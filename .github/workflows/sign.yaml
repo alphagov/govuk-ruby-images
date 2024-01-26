@@ -2,7 +2,7 @@ name: Sign container images
 
 on:
   workflow_run:
-    workflows: ["Build and push images"]
+    workflows: ["Build and push multi-arch images"]
     types:
       - completed
   workflow_dispatch:
