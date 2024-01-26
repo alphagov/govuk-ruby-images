@@ -136,6 +136,7 @@ jobs:
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
+            RUBY_CHECKSUM=${{ matrix.version.checksum }}
             OWNER=${{ github.repository_owner }}
           tags: ${{ steps.builder-image-metadata.outputs.tags }}
           labels: ${{ steps.builder-image-metadata.outputs.labels }}
@@ -248,6 +249,7 @@ jobs:
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
+            RUBY_CHECKSUM=${{ matrix.version.checksum }}
             OWNER=${{ github.repository_owner }}
           tags: ${{ steps.builder-image-metadata.outputs.tags }}
           labels: ${{ steps.builder-image-metadata.outputs.labels }}
