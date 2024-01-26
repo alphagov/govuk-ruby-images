@@ -1,5 +1,5 @@
 ARG OWNER=alphagov
-ARG RUBY_MAJOR
+ARG RUBY_MAJOR RUBY_CHECKSUM
 FROM --platform=$TARGETPLATFORM ghcr.io/${OWNER}/govuk-ruby-base:${RUBY_MAJOR}
 
 RUN install_packages \
