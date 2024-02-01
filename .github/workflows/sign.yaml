@@ -42,5 +42,5 @@ jobs:
           $SYFT --output spdx-json "${BASE_IMAGE}" > base.spdx.json
           $SYFT --output spdx-json "${BUILDER_IMAGE}" > builder.spdx.json
 
-          cosign attest -y --predicate base.spdx.json --key "awskms:///alias/container-signing-key" "${BASE_IMAGE}"
-          cosign attest -y --predicate builder.spdx.json --key "awskms:///alias/container-signing-key" "${BUILDER_IMAGE}"
+          cosign attest -y --type spdxjson --predicate base.spdx.json --key "awskms:///alias/container-signing-key" "${BASE_IMAGE}"
+          cosign attest -y --type spdxjson --predicate builder.spdx.json --key "awskms:///alias/container-signing-key" "${BUILDER_IMAGE}"
