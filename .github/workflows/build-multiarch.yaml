@@ -128,7 +128,7 @@ jobs:
         id: build-builder-image
         uses: docker/build-push-action@v5
         with:
-          file: base.Dockerfile
+          file: builder.Dockerfile
           context: .
           push: ${{ inputs.pushToRegistry || true }}
           platforms:  "linux/amd64"
@@ -241,7 +241,7 @@ jobs:
         id: build-builder-image
         uses: docker/build-push-action@v5
         with:
-          file: base.Dockerfile
+          file: builder.Dockerfile
           context: .
           push: ${{ inputs.pushToRegistry || true }}
           platforms:  "linux/arm64"
