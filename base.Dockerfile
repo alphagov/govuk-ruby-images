@@ -1,4 +1,5 @@
 FROM --platform=$TARGETPLATFORM public.ecr.aws/lts/ubuntu:22.04_stable AS builder
+ARG TARGETARCH
 
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 
@@ -36,6 +37,10 @@ RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dear
 WORKDIR /usr/src/ruby
 RUN set -x; \
     MAKEFLAGS=-j"$(nproc)"; export MAKEFLAGS; \
+    if [[ "$RUBY_VERSION" = "3.3.0" && "$TARGETARCH" = "arm64" ]]; then \
+      : "workaround for https://bugs.ruby-lang.org/issues/20085"; \
+      ASFLAGS="-mbranch-protection=pac-ret"; export ASFLAGS; \
+    fi; \
     ruby_tarball="ruby-${RUBY_VERSION}.tar.gz"; \
     curl -fsSLO "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR}/${ruby_tarball}"; \
     echo "${RUBY_CHECKSUM} ${ruby_tarball}" | sha256sum --check --strict --status; \
