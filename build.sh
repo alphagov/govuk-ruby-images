@@ -1,52 +1,52 @@
 #!/bin/bash
 #
-# To build without pushing to a registry, set DRY_RUN to anything other than
-# the empty string. For example:
-#
-#     DRY_RUN=1 ./build.sh
-#
-# To build and push images for just one Ruby version instead of all versions in
-# versions/*, specify a version filename from versions/*. For example:
-#
-#     ./build.sh 3_1
+# This script is just for building locally. The production build is in
+# .github/workflows.
 #
 
 set -eu
 
-# Build (and push, unless $DRY_RUN is non-empty) the base and builder images
-# for the Ruby version defined in the file versions/$1.
+usage() {
+  echo >&2 "usage: $0 <major.minor.patch Ruby version to build e.g. 3.3.0>"
+  echo >&2 "To push after build, set PUSH_TO_REGISTRY=1 and a valid GITHUB_TOKEN."
+  exit 64
+}
+
+sha_for_version() {
+  jq -r <build-matrix.json \
+    '.version[] | select(.rubyver|join(".") == "'"$1"'") | .checksum'
+}
+
+major_minor_version() {
+  jq -r <build-matrix.json \
+    '.version[] | select(.rubyver|join(".") == "'"$1"'") | .rubyver[0:2]|join(".")'
+}
+
 build_version() {
-  RUBY_IS_PATCH=false
-  # shellcheck disable=SC1090
-  source "$1"
+  ruby_version=$1
+  ruby_major_minor=$(major_minor_version "${ruby_version}")
 
-  for IMAGE_TYPE in base builder; do
-    echo "Building ${IMAGE_TYPE} image for Ruby ${RUBY_MAJOR} (${RUBY_VERSION})"
-    IMAGE_NAME="govuk-ruby-${IMAGE_TYPE}"
-    docker build . \
-      -t "ghcr.io/alphagov/${IMAGE_NAME}:${RUBY_MAJOR}" \
-      -f "${IMAGE_TYPE}.Dockerfile" \
-      --build-arg "RUBY_MAJOR=${RUBY_MAJOR}" \
-      --build-arg "RUBY_VERSION=${RUBY_VERSION}"
-    docker tag \
-      "ghcr.io/alphagov/${IMAGE_NAME}:${RUBY_MAJOR}" \
-      "ghcr.io/alphagov/${IMAGE_NAME}:${RUBY_VERSION}"
+  for img in base builder; do
+    echo "Building ${img} image for Ruby ${ruby_major_minor} (${ruby_version})"
+    image_name="govuk-ruby-${img}"
+    docker buildx build \
+      --platform "${ARCHS:-linux/amd64,linux/arm64}" \
+      --load \
+      --build-arg "RUBY_MAJOR=${ruby_major_minor}" \
+      --build-arg "RUBY_VERSION=${ruby_version}" \
+      --build-arg "RUBY_CHECKSUM=$(sha_for_version "$ruby_version")" \
+      -t "ghcr.io/alphagov/${image_name}:${ruby_major_minor}" \
+      -t "ghcr.io/alphagov/${image_name}:${ruby_major_minor}" \
+      -t "ghcr.io/alphagov/${image_name}:${ruby_version}" \
+      -f "${img}.Dockerfile" .
 
-    if [[ -n ${DRY_RUN:-} ]]; then
-      echo "dry run: not pushing image to registry"
-    else
-      if [[ "${RUBY_IS_PATCH}" != "true" ]]; then
-        docker push "ghcr.io/alphagov/${IMAGE_NAME}:${RUBY_MAJOR}"
-      fi
-      docker push "ghcr.io/alphagov/${IMAGE_NAME}:${RUBY_VERSION}"
+    if [[ ${PUSH_TO_REGISTRY:-} = "1" ]]; then
+      echo "pushing to registry"
+      docker push "ghcr.io/alphagov/${image_name}:${ruby_major_minor}"
+      docker push "ghcr.io/alphagov/${image_name}:${ruby_version}"
     fi
   done
 }
 
-if [[ -n "${1:-}" ]]; then
-  build_version versions/"$1"
-else
-  for v in versions/*; do
-    build_version "$v"
-  done
-fi
+[[ -n "${1:-}" ]] || usage
+build_version "$1"
