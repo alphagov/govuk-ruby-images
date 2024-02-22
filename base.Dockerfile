@@ -64,7 +64,7 @@ FROM --platform=$TARGETPLATFORM public.ecr.aws/lts/ubuntu:22.04_stable
 
 LABEL org.opencontainers.image.title="govuk-ruby-base"
 LABEL org.opencontainers.image.authors="GOV.UK Platform Engineering"
-LABEL org.opencontainers.image.description="Base Image for GOV.UK Ruby-based Apps"
+LABEL org.opencontainers.image.description="Base image for GOV.UK Ruby apps"
 LABEL org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
 LABEL org.opencontainers.image.vendor="GDS"
 
