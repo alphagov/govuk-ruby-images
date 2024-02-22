@@ -17,6 +17,6 @@ ENV SECRET_KEY_BASE_DUMMY=1
 
 LABEL org.opencontainers.image.title="govuk-ruby-builder"
 LABEL org.opencontainers.image.authors="GOV.UK Platform Engineering"
-LABEL org.opencontainers.image.description="Builder Image for GOV.UK Ruby-based Apps"
+LABEL org.opencontainers.image.description="Builder image for GOV.UK Ruby apps"
 LABEL org.opencontainers.image.source=https://github.com/${OWNER}/govuk-ruby-images
 LABEL org.opencontainers.image.vendor="GDS"
