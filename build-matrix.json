@@ -14,5 +14,8 @@
             "checksum": "96518814d9832bece92a85415a819d4893b307db5921ae1f0f751a9a89a56b7d",
             "extra": "latest"
         }
+    ],
+    "arch": [
+        "amd64", "arm64"
     ]
 }

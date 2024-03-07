@@ -32,9 +32,8 @@ jobs:
       - id: set-matrix
         run: echo "matrix=$(jq -c . < build-matrix.json)" >> $GITHUB_OUTPUT
 
-  # TODO: can we push the target arch into the build matrix to avoid duplicating these jobs?
-  build_and_push_amd64:
-    name: Build ruby_${{ join(matrix.version.rubyver, '.') }} for AMD64 and push to GHCR
+  build_and_push_image:
+    name: Build ruby_${{ join(matrix.version.rubyver, '.') }} for ${{ matrix.arch }} and push to GHCR
     runs-on: ubuntu-latest
     needs: configure_builds
     strategy:
@@ -49,118 +48,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.gitRef || github.ref }}
-          show-progress: false
-
-      - uses: docker/setup-buildx-action@v3
-
-      - id: calculate-image-tags
-        run: |
-          CREATED_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          echo "createdDate=${CREATED_DATE}" >> $GITHUB_OUTPUT
-
-      - name: Generate Base Image Metadata
-        uses: docker/metadata-action@v5
-        id: base-image-metadata
-        with:
-          flavor: |
-            latest=false
-          images: |
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-base
-          labels: |
-            org.opencontainers.image.title=govuk-ruby-base
-            org.opencontainers.image.authors=GOV.UK Platform Engineering
-            org.opencontainers.image.description=Base Image for GOV.UK Ruby-based Apps
-            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
-            org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
-            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
-            org.opencontainers.image.vendor=GDS
-          tags: |
-            type=semver,pattern={{raw}},suffix=-amd64,value=${{ join(matrix.version.rubyver, '.') }}
-            type=raw,value=latest-amd64,enable=${{ matrix.version.extra == 'latest' }}
-            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-amd64,format=short
-            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-amd64
-
-      - name: Generate Builder Image Metadata
-        uses: docker/metadata-action@v5
-        id: builder-image-metadata
-        with:
-          flavor: |
-            latest=false
-          images: |
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder
-          labels: |
-            org.opencontainers.image.title=govuk-ruby-builder
-            org.opencontainers.image.authors=GOV.UK Platform Engineering
-            org.opencontainers.image.description=Builder Image for GOV.UK Ruby-based Apps
-            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
-            org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
-            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
-            org.opencontainers.image.vendor=GDS
-          tags: |
-            type=semver,pattern={{raw}},suffix=-amd64,value=${{ join(matrix.version.rubyver, '.') }}
-            type=raw,value=latest-amd64,enable=${{ matrix.version.extra == 'latest' }}
-            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-amd64,format=short
-            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-amd64
-
-      - id: build-base-image
-        uses: docker/build-push-action@v5
-        with:
-          file: base.Dockerfile
-          context: .
-          push: ${{ inputs.pushToRegistry || true }}
-          platforms: "linux/amd64"
-          provenance: false
-          build-args: |
-            RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
-            RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
-            RUBY_CHECKSUM=${{ matrix.version.checksum }}
-          tags: ${{ steps.base-image-metadata.outputs.tags }}
-          labels: ${{ steps.base-image-metadata.outputs.labels }}
-
-      - id: build-builder-image
-        uses: docker/build-push-action@v5
-        with:
-          file: builder.Dockerfile
-          context: .
-          push: ${{ inputs.pushToRegistry || true }}
-          platforms:  "linux/amd64"
-          provenance: false
-          build-args: |
-            RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
-            RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
-            RUBY_CHECKSUM=${{ matrix.version.checksum }}
-            OWNER=${{ github.repository_owner }}
-          tags: ${{ steps.builder-image-metadata.outputs.tags }}
-          labels: ${{ steps.builder-image-metadata.outputs.labels }}
-
-  build_and_push_arm64:
-    name: Build ruby_${{ join(matrix.version.rubyver, '.') }} for ARM64 and push to GHCR
-    runs-on: ubuntu-latest
-    needs: configure_builds
-    strategy:
-      matrix: ${{ fromJson(needs.configure_builds.outputs.matrix) }}
-    permissions:
-      packages: write
-    steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.gitRef || github.ref }}
-          show-progress: false
-
-      - name: Set up QEMU for ARM64 build
+      - name: Set up QEMU for ${{ matrix.arch }} build
+        if: ${{ matrix.arch != 'amd64' }}
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: arm64
+          platforms: ${{ matrix.arch }}
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.gitRef || github.ref }}
+          show-progress: false
 
       - uses: docker/setup-buildx-action@v3
 
@@ -186,10 +83,10 @@ jobs:
             org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
           tags: |
-            type=semver,pattern={{raw}},suffix=-arm64,value=${{ join(matrix.version.rubyver, '.') }}
-            type=raw,value=latest-arm64,enable=${{ matrix.version.extra == 'latest' }}
-            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-arm64,format=short
-            type=sha,enable=true,priority=100,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-arm64,format=long
+            type=semver,pattern={{raw}},suffix=-${{ matrix.arch }},value=${{ join(matrix.version.rubyver, '.') }}
+            type=raw,value=latest-${{ matrix.arch }},enable=${{ matrix.version.extra == 'latest' }}
+            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-${{ matrix.arch }},format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-${{ matrix.arch }}
 
       - name: Generate Builder Image Metadata
         uses: docker/metadata-action@v5
@@ -208,10 +105,10 @@ jobs:
             org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
           tags: |
-            type=semver,pattern={{raw}},suffix=-arm64,value=${{ join(matrix.version.rubyver, '.') }}
-            type=raw,value=latest-arm64,enable=${{ matrix.version.extra == 'latest' }}
-            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-arm64,format=short
-            type=sha,enable=true,priority=100,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-arm64,format=long
+            type=semver,pattern={{raw}},suffix=-${{ matrix.arch }},value=${{ join(matrix.version.rubyver, '.') }}
+            type=raw,value=latest-${{ matrix.arch }},enable=${{ matrix.version.extra == 'latest' }}
+            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-${{ matrix.arch }},format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-${{ matrix.arch }}
 
       - id: build-base-image
         uses: docker/build-push-action@v5
@@ -219,7 +116,7 @@ jobs:
           file: base.Dockerfile
           context: .
           push: ${{ inputs.pushToRegistry || true }}
-          platforms: "linux/arm64"
+          platforms: "linux/${{ matrix.arch }}"
           provenance: false
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
@@ -234,7 +131,7 @@ jobs:
           file: builder.Dockerfile
           context: .
           push: ${{ inputs.pushToRegistry || true }}
-          platforms:  "linux/arm64"
+          platforms:  "linux/${{ matrix.arch }}"
           provenance: false
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
@@ -249,8 +146,7 @@ jobs:
     name: Create Docker Manifests for Ruby ${{ join(matrix.version.rubyver, '.') }} Images
     needs:
       - configure_builds
-      - build_and_push_amd64
-      - build_and_push_arm64
+      - build_and_push_image
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{ fromJson(needs.configure_builds.outputs.matrix) }}
