@@ -19,6 +19,9 @@ on:
   schedule:
     - cron: '34 3 * * *'
 
+env:
+  REGISTRY_BASE: ghcr.io/alphagov
+
 jobs:
   configure_builds:
     name: Read configuration from build-matrix.json
@@ -30,7 +33,9 @@ jobs:
         with:
           show-progress: false
       - id: set-matrix
-        run: echo "matrix=$(jq -c . < build-matrix.json)" >> $GITHUB_OUTPUT
+        run: |
+          echo "matrix=$(jq -c . < build-matrix.json)" >> $GITHUB_OUTPUT
+          echo "matrix_versions=$(jq -c .version < build-matrix.json)" >> $GITHUB_OUTPUT
 
   build_and_push_image:
     name: Build ruby_${{ join(matrix.version.rubyver, '.') }} for ${{ matrix.arch }} and push to GHCR
@@ -61,7 +66,8 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      - id: calculate-image-tags
+      - name: Calculate Image Tags
+        id: calculate-image-tags
         run: |
           CREATED_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           echo "createdDate=${CREATED_DATE}" >> $GITHUB_OUTPUT
@@ -73,7 +79,7 @@ jobs:
           flavor: |
             latest=false
           images: |
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-base
+            ${{ env.REGISTRY_BASE }}/govuk-ruby-base
           labels: |
             org.opencontainers.image.title=govuk-ruby-base
             org.opencontainers.image.authors=GOV.UK Platform Engineering
@@ -95,7 +101,7 @@ jobs:
           flavor: |
             latest=false
           images: |
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder
+            ${{ env.REGISTRY_BASE }}/govuk-ruby-builder
           labels: |
             org.opencontainers.image.title=govuk-ruby-builder
             org.opencontainers.image.authors=GOV.UK Platform Engineering
@@ -124,6 +130,9 @@ jobs:
             RUBY_CHECKSUM=${{ matrix.version.checksum }}
           tags: ${{ steps.base-image-metadata.outputs.tags }}
           labels: ${{ steps.base-image-metadata.outputs.labels }}
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-base,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=build-base-${{ matrix.arch }}
+          cache-to: type=gha,scope=build-base-${{ matrix.arch }},mode=max
 
       - id: build-builder-image
         uses: docker/build-push-action@v5
@@ -140,10 +149,29 @@ jobs:
             OWNER=${{ github.repository_owner }}
           tags: ${{ steps.builder-image-metadata.outputs.tags }}
           labels: ${{ steps.builder-image-metadata.outputs.labels }}
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-builder,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=build-builder-${{ matrix.arch }}
+          cache-to: type=gha,scope=build-builder-${{ matrix.arch }},mode=max
 
-  create_docker_manifests:
+      - id: export-digests
+        run: |
+          mkdir -p /tmp/digests/base /tmp/digests/base
+          baseDigest="${{steps.build-base-image.outputs.digest }}"
+          builderDigest="${{steps.build-builder-image.outputs.digest }}"
+          touch "/tmp/digests/base/${baseDigest#sha256:}"
+          touch "/tmp/digests/builder/${builderDigest#sha256:}"
+
+      - id: upload-digests
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-base-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  combine_manifests:
     if: ${{ inputs.pushToRegistry || true }}
-    name: Create Docker Manifests for Ruby ${{ join(matrix.version.rubyver, '.') }} Images
+    name: Combine Docker Manifests for Ruby ${{ join(matrix.version.rubyver, '.') }} Images
     needs:
       - configure_builds
       - build_and_push_image
@@ -154,6 +182,21 @@ jobs:
     permissions:
       packages: write
     steps:
+      - name: Download Digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Calculate Image Tags
+        id: calculate-image-tags
+        run: |
+          CREATED_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "createdDate=${CREATED_DATE}" >> $GITHUB_OUTPUT
+
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -161,57 +204,59 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/checkout@v4
+      - name: Generate Base Image Metadata
+        uses: docker/metadata-action@v5
+        id: base-image-metadata
         with:
-          ref: ${{ inputs.gitRef || github.ref }}
-          show-progress: false
+          flavor: |
+            latest=false
+          images: |
+            ${{ env.REGISTRY_BASE }}/govuk-ruby-base
+          labels: |
+            org.opencontainers.image.title=govuk-ruby-base
+            org.opencontainers.image.authors=GOV.UK Platform Engineering
+            org.opencontainers.image.description=Base Image for GOV.UK Ruby-based Apps
+            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
+            org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
+            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
+            org.opencontainers.image.vendor=GDS
+          tags: |
+            type=semver,pattern={{raw}},suffix=-${{ matrix.arch }},value=${{ join(matrix.version.rubyver, '.') }}
+            type=raw,value=latest-${{ matrix.arch }},enable=${{ matrix.version.extra == 'latest' }}
+            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-${{ matrix.arch }},format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-${{ matrix.arch }}
 
-      - name: Create SHA manifest and push for Ruby Base Images
-        run: |
-          docker manifest create \
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ join(matrix.version.rubyver, '.') }}-${{ github.sha }} \
-            --amend ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ join(matrix.version.rubyver, '.') }}-${{ github.sha }}-amd64 \
-            --amend ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ join(matrix.version.rubyver, '.') }}-${{ github.sha }}-arm64
-          docker manifest push ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ join(matrix.version.rubyver, '.') }}-${{ github.sha }}
+      - name: Generate Builder Image Metadata
+        uses: docker/metadata-action@v5
+        id: builder-image-metadata
+        with:
+          flavor: |
+            latest=false
+          images: |
+            ${{ env.REGISTRY_BASE }}/govuk-ruby-builder
+          labels: |
+            org.opencontainers.image.title=govuk-ruby-builder
+            org.opencontainers.image.authors=GOV.UK Platform Engineering
+            org.opencontainers.image.description=Builder Image for GOV.UK Ruby-based Apps
+            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
+            org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
+            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
+            org.opencontainers.image.vendor=GDS
+          tags: |
+            type=semver,pattern={{raw}},suffix=-${{ matrix.arch }},value=${{ join(matrix.version.rubyver, '.') }}
+            type=raw,value=latest-${{ matrix.arch }},enable=${{ matrix.version.extra == 'latest' }}
+            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-${{ matrix.arch }},format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-,suffix=-${{ matrix.arch }}
 
-      - name: Create SHA manifest and push for Ruby Builder Images
+      - name: Create Manifest Lists
+        working-directory: /tmp/digests
         run: |
-          docker manifest create \
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ join(matrix.version.rubyver, '.') }}-${{ github.sha }} \
-            --amend ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ join(matrix.version.rubyver, '.') }}-${{ github.sha }}-amd64 \
-            --amend ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ join(matrix.version.rubyver, '.') }}-${{ github.sha }}-arm64
-          docker manifest push ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ join(matrix.version.rubyver, '.') }}-${{ github.sha }}
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.base-image-metadata.outputs.json }}") \
+            $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-base@sha256:%s ' *)  
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.builder-image-metadata.outputs.json }}") \
+            $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-builder@sha256:%s ' *)  
 
-      - name: Create Ruby Versioned manifest and push for Ruby Base Images
+      - name: Inspect Images
         run: |
-          docker manifest create \
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ join(matrix.version.rubyver, '.') }} \
-            --amend ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ join(matrix.version.rubyver, '.') }}-${{ github.sha }}-amd64 \
-            --amend ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ join(matrix.version.rubyver, '.') }}-${{ github.sha }}-arm64
-          docker manifest push ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:${{ join(matrix.version.rubyver, '.') }}
-
-      - name: Create Ruby Versioned manifest and push for Ruby Builder Images
-        run: |
-          docker manifest create \
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ join(matrix.version.rubyver, '.') }} \
-            --amend ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ join(matrix.version.rubyver, '.') }}-${{ github.sha }}-amd64 \
-            --amend ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ join(matrix.version.rubyver, '.') }}-${{ github.sha }}-arm64
-          docker manifest push ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:${{ join(matrix.version.rubyver, '.') }}
-
-      - name: Create Latest manifest and push for Ruby Base Images
-        if: ${{ matrix.version.extra == 'latest' }}
-        run: |
-          docker manifest create \
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:latest \
-            --amend ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:latest-amd64 \
-            --amend ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:latest-arm64
-          docker manifest push ghcr.io/${{ github.repository_owner }}/govuk-ruby-base:latest
-
-      - name: Create Latest manifest and push for Ruby Builder Images
-        if: ${{ matrix.version.extra == 'latest' }}
-        run: |
-          docker manifest create \
-            ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:latest \
-            --amend ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:latest-amd64 \
-            --amend ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:latest-arm64
-          docker manifest push ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder:latest
+          docker buildx imagetools inspect ${{ env.REGISTRY_BASE }}/govuk-ruby-base:${{ steps.base-image-metadata.outputs.version }}
+          docker buildx imagetools inspect ${{ env.REGISTRY_BASE }}/govuk-ruby-builder:${{ steps.builder-image-metadata.outputs.version }}
