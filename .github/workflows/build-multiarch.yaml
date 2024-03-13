@@ -130,7 +130,7 @@ jobs:
             RUBY_CHECKSUM=${{ matrix.version.checksum }}
           tags: ${{ steps.base-image-metadata.outputs.tags }}
           labels: ${{ steps.base-image-metadata.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-base,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-base,push-by-digest=true,name-canonical=true
           cache-from: type=gha,scope=build-base-${{ matrix.arch }}
           cache-to: type=gha,scope=build-base-${{ matrix.arch }},mode=max
 
@@ -149,7 +149,7 @@ jobs:
             OWNER=${{ github.repository_owner }}
           tags: ${{ steps.builder-image-metadata.outputs.tags }}
           labels: ${{ steps.builder-image-metadata.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-builder,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-builder,push-by-digest=true,name-canonical=true
           cache-from: type=gha,scope=build-builder-${{ matrix.arch }}
           cache-to: type=gha,scope=build-builder-${{ matrix.arch }},mode=max
 
