@@ -88,11 +88,6 @@ jobs:
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
             org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
-          tags: |
-            type=semver,pattern={{raw}},value=${{ join(matrix.version.rubyver, '.') }}
-            type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
-            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
-            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
 
       - name: Generate Builder Image Metadata
         uses: docker/metadata-action@v5
@@ -110,11 +105,6 @@ jobs:
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
             org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
-          tags: |
-            type=semver,pattern={{raw}}value=${{ join(matrix.version.rubyver, '.') }}
-            type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
-            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
-            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
 
       - id: build-base-image
         uses: docker/build-push-action@v5
