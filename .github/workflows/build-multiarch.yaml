@@ -35,7 +35,7 @@ jobs:
       - id: set-matrix
         run: |
           echo "matrix=$(jq -c . < build-matrix.json)" >> $GITHUB_OUTPUT
-          echo "matrix_versions=$(jq -c .version < build-matrix.json)" >> $GITHUB_OUTPUT
+          echo "matrix_versions=$(jq -c .version[] < build-matrix.json)" >> $GITHUB_OUTPUT
 
   build_and_push_image:
     name: Build ruby_${{ join(matrix.version.rubyver, '.') }} for ${{ matrix.arch }} and push to GHCR
@@ -169,7 +169,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix: 
-        version: ${{ fromJson(needs.configure_builds.outputs.matrix.version) }}
+        version: ${{ fromJson(needs.configure_builds.outputs.matrix_versions) }}
     permissions:
       packages: write
     steps:
