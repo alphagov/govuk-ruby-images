@@ -145,7 +145,7 @@ jobs:
 
       - id: export-digests
         run: |
-          mkdir -p /tmp/digests/base /tmp/digests/base
+          mkdir -p /tmp/digests/base /tmp/digests/builder
           baseDigest="${{steps.build-base-image.outputs.digest }}"
           builderDigest="${{steps.build-builder-image.outputs.digest }}"
           touch "/tmp/digests/base/${baseDigest#sha256:}"
