@@ -111,7 +111,7 @@ jobs:
         with:
           file: base.Dockerfile
           context: .
-          push: ${{ inputs.pushToRegistry || true }}
+          push: false
           platforms: "linux/${{ matrix.arch }}"
           provenance: false
           build-args: |
@@ -129,7 +129,7 @@ jobs:
         with:
           file: builder.Dockerfile
           context: .
-          push: ${{ inputs.pushToRegistry || true }}
+          push: false
           platforms:  "linux/${{ matrix.arch }}"
           provenance: false
           build-args: |
