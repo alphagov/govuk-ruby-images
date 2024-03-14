@@ -28,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix_versions: ${{ steps.set-matrix.outputs.matrix_versions }}
     steps:
       - uses: actions/checkout@v4
         with:
