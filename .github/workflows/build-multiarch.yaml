@@ -81,6 +81,11 @@ jobs:
             latest=false
           images: |
             ${{ env.REGISTRY_BASE }}/govuk-ruby-base
+          tags: |
+            type=semver,pattern={{raw}},value=${{ join(matrix.version.rubyver, '.') }}
+            type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
+            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
           labels: |
             org.opencontainers.image.title=govuk-ruby-base
             org.opencontainers.image.authors=GOV.UK Platform Engineering
@@ -98,6 +103,11 @@ jobs:
             latest=false
           images: |
             ${{ env.REGISTRY_BASE }}/govuk-ruby-builder
+          tags: |
+            type=semver,pattern={{raw}}value=${{ join(matrix.version.rubyver, '.') }}
+            type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
+            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
           labels: |
             org.opencontainers.image.title=govuk-ruby-builder
             org.opencontainers.image.authors=GOV.UK Platform Engineering
@@ -112,16 +122,15 @@ jobs:
         with:
           file: base.Dockerfile
           context: .
-          push: false
           platforms: "linux/${{ matrix.arch }}"
+          load: true
           provenance: false
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
             RUBY_CHECKSUM=${{ matrix.version.checksum }}
-          tags: ${{ steps.base-image-metadata.outputs.tags }}
           labels: ${{ steps.base-image-metadata.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-base,push-by-digest=true,name-canonical=true
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-base,push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=build-base-${{ matrix.arch }}
           cache-to: type=gha,scope=build-base-${{ matrix.arch }},mode=max
 
@@ -132,15 +141,15 @@ jobs:
           context: .
           push: false
           platforms:  "linux/${{ matrix.arch }}"
+          load: true
           provenance: false
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
             RUBY_CHECKSUM=${{ matrix.version.checksum }}
             OWNER=${{ github.repository_owner }}
-          tags: ${{ steps.builder-image-metadata.outputs.tags }}
           labels: ${{ steps.builder-image-metadata.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-builder,push-by-digest=true,name-canonical=true
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-builder,push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=build-builder-${{ matrix.arch }}
           cache-to: type=gha,scope=build-builder-${{ matrix.arch }},mode=max
 
