@@ -249,11 +249,17 @@ jobs:
             type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
 
-      - name: Create Manifest Lists
-        working-directory: /tmp/digests
+      - name: Create Manifest Lists (for Base)
+        working-directory: /tmp/digests/base
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.base-image-metadata.outputs.json }}") \
             $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-base@sha256:%s ' *)  
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.builder-image-metadata.outputs.json }}") \
+            $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-builder@sha256:%s ' *)  
+
+      - name: Create Manifest Lists (for Builder)
+        working-directory: /tmp/digests/builder
+        run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.builder-image-metadata.outputs.json }}") \
             $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-builder@sha256:%s ' *)  
 
