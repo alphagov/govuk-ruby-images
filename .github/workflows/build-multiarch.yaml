@@ -131,8 +131,8 @@ jobs:
             RUBY_CHECKSUM=${{ matrix.version.checksum }}
           labels: ${{ steps.base-image-metadata.outputs.labels }}
           outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-base,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=build-base-${{ matrix.arch }}
-          cache-to: type=gha,scope=build-base-${{ matrix.arch }},mode=max
+          cache-from: type=gha,scope=build-base-${{ matrix.version.rubyver }}-${{ matrix.arch }}
+          cache-to: type=gha,scope=build-base-${{ matrix.version.rubyver }}-${{ matrix.arch }},mode=max
 
       - id: build-builder-image
         uses: docker/build-push-action@v5
@@ -150,8 +150,8 @@ jobs:
             OWNER=${{ github.repository_owner }}
           labels: ${{ steps.builder-image-metadata.outputs.labels }}
           outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-builder,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=build-builder-${{ matrix.arch }}
-          cache-to: type=gha,scope=build-builder-${{ matrix.arch }},mode=max
+          cache-from: type=gha,scope=build-builder-${{ matrix.version.rubyver }}-${{ matrix.arch }}
+          cache-to: type=gha,scope=build-builder-${{ matrix.version.rubyver }}-${{ matrix.arch }},mode=max
 
       - id: export-digests
         run: |
