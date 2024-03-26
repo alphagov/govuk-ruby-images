@@ -160,6 +160,7 @@ jobs:
           builderDigest="${{steps.build-builder-image.outputs.digest }}"
           touch "/tmp/digests/base/${baseDigest#sha256:}"
           touch "/tmp/digests/builder/${builderDigest#sha256:}"
+          tree /tmp/digests
 
       - id: upload-digests
         uses: actions/upload-artifact@v4
@@ -248,6 +249,10 @@ jobs:
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
             type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
+
+      - name: List Digests Storage (Debug)
+        run: |
+          tree /tmp/digests
 
       - name: Create Manifest Lists (for Base)
         working-directory: /tmp/digests/base
