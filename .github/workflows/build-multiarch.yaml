@@ -88,9 +88,9 @@ jobs:
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
           labels: |
             org.opencontainers.image.title=govuk-ruby-base
-            org.opencontainers.image.authors=GOV.UK Platform Engineering
-            org.opencontainers.image.description=Base Image for GOV.UK Ruby-based Apps
-            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
+            org.opencontainers.image.authors="GOV.UK Platform Engineering"
+            org.opencontainers.image.description="Base Image for GOV.UK Ruby-based Apps"
+            org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
             org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
@@ -110,9 +110,9 @@ jobs:
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
           labels: |
             org.opencontainers.image.title=govuk-ruby-builder
-            org.opencontainers.image.authors=GOV.UK Platform Engineering
-            org.opencontainers.image.description=Builder Image for GOV.UK Ruby-based Apps
-            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
+            org.opencontainers.image.authors="GOV.UK Platform Engineering"
+            org.opencontainers.image.description="Builder Image for GOV.UK Ruby-based Apps"
+            org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
             org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
@@ -216,9 +216,9 @@ jobs:
             ${{ env.REGISTRY_BASE }}/govuk-ruby-base
           labels: |
             org.opencontainers.image.title=govuk-ruby-base
-            org.opencontainers.image.authors=GOV.UK Platform Engineering
-            org.opencontainers.image.description=Base Image for GOV.UK Ruby-based Apps
-            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
+            org.opencontainers.image.authors="GOV.UK Platform Engineering"
+            org.opencontainers.image.description="Base Image for GOV.UK Ruby-based Apps"
+            org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
             org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
@@ -238,9 +238,9 @@ jobs:
             ${{ env.REGISTRY_BASE }}/govuk-ruby-builder
           labels: |
             org.opencontainers.image.title=govuk-ruby-builder
-            org.opencontainers.image.authors=GOV.UK Platform Engineering
-            org.opencontainers.image.description=Builder Image for GOV.UK Ruby-based Apps
-            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
+            org.opencontainers.image.authors="GOV.UK Platform Engineering"
+            org.opencontainers.image.description="Builder Image for GOV.UK Ruby-based Apps"
+            org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
             org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
