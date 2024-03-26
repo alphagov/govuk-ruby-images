@@ -250,9 +250,13 @@ jobs:
             type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
 
-      - name: List Digests Storage (Debug)
+      - name: Debug - Step Output
         run: |
-          tree /tmp/digests
+          echo "Github steps.base-image-metadata.outputs.json output:"
+          echo ${{ steps.base-image-metadata.outputs.json }}
+          echo "========"
+          echo "DOCKER_METADATA_OUTPUT_JSON Env Var Output:"
+          echo $DOCKER_METADATA_OUTPUT_JSON
 
       - name: Create Manifest Lists (for Base)
         working-directory: /tmp/digests/base
