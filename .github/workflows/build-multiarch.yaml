@@ -28,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix_versions: ${{ steps.set-matrix.outputs.matrix_versions }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -80,19 +81,19 @@ jobs:
             latest=false
           images: |
             ${{ env.REGISTRY_BASE }}/govuk-ruby-base
-          labels: |
-            org.opencontainers.image.title=govuk-ruby-base
-            org.opencontainers.image.authors=GOV.UK Platform Engineering
-            org.opencontainers.image.description=Base Image for GOV.UK Ruby-based Apps
-            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
-            org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
-            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
-            org.opencontainers.image.vendor=GDS
           tags: |
             type=semver,pattern={{raw}},value=${{ join(matrix.version.rubyver, '.') }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
             type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
+          labels: |
+            org.opencontainers.image.title=govuk-ruby-base
+            org.opencontainers.image.authors="GOV.UK Platform Engineering"
+            org.opencontainers.image.description="Base Image for GOV.UK Ruby-based Apps"
+            org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
+            org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
+            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
+            org.opencontainers.image.vendor=GDS
 
       - name: Generate Builder Image Metadata
         uses: docker/metadata-action@v5
@@ -102,64 +103,64 @@ jobs:
             latest=false
           images: |
             ${{ env.REGISTRY_BASE }}/govuk-ruby-builder
-          labels: |
-            org.opencontainers.image.title=govuk-ruby-builder
-            org.opencontainers.image.authors=GOV.UK Platform Engineering
-            org.opencontainers.image.description=Builder Image for GOV.UK Ruby-based Apps
-            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
-            org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
-            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
-            org.opencontainers.image.vendor=GDS
           tags: |
             type=semver,pattern={{raw}}value=${{ join(matrix.version.rubyver, '.') }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
             type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
+          labels: |
+            org.opencontainers.image.title=govuk-ruby-builder
+            org.opencontainers.image.authors="GOV.UK Platform Engineering"
+            org.opencontainers.image.description="Builder Image for GOV.UK Ruby-based Apps"
+            org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
+            org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
+            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
+            org.opencontainers.image.vendor=GDS
 
       - id: build-base-image
         uses: docker/build-push-action@v5
         with:
           file: base.Dockerfile
           context: .
-          push: ${{ inputs.pushToRegistry || true }}
           platforms: "linux/${{ matrix.arch }}"
+          load: true
           provenance: false
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
             RUBY_CHECKSUM=${{ matrix.version.checksum }}
-          tags: ${{ steps.base-image-metadata.outputs.tags }}
           labels: ${{ steps.base-image-metadata.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-base,push-by-digest=true,name-canonical=true
-          cache-from: type=gha,scope=build-base-${{ matrix.arch }}
-          cache-to: type=gha,scope=build-base-${{ matrix.arch }},mode=max
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-base,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=build-base-${{ matrix.version.rubyver }}-${{ matrix.arch }}
+          cache-to: type=gha,scope=build-base-${{ matrix.version.rubyver }}-${{ matrix.arch }},mode=max
 
       - id: build-builder-image
         uses: docker/build-push-action@v5
         with:
           file: builder.Dockerfile
           context: .
-          push: ${{ inputs.pushToRegistry || true }}
+          push: false
           platforms:  "linux/${{ matrix.arch }}"
+          load: true
           provenance: false
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
             RUBY_CHECKSUM=${{ matrix.version.checksum }}
             OWNER=${{ github.repository_owner }}
-          tags: ${{ steps.builder-image-metadata.outputs.tags }}
           labels: ${{ steps.builder-image-metadata.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-builder,push-by-digest=true,name-canonical=true
-          cache-from: type=gha,scope=build-builder-${{ matrix.arch }}
-          cache-to: type=gha,scope=build-builder-${{ matrix.arch }},mode=max
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-builder,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=build-builder-${{ matrix.version.rubyver }}-${{ matrix.arch }}
+          cache-to: type=gha,scope=build-builder-${{ matrix.version.rubyver }}-${{ matrix.arch }},mode=max
 
       - id: export-digests
         run: |
-          mkdir -p /tmp/digests/base /tmp/digests/base
+          mkdir -p /tmp/digests/base /tmp/digests/builder
           baseDigest="${{steps.build-base-image.outputs.digest }}"
           builderDigest="${{steps.build-builder-image.outputs.digest }}"
           touch "/tmp/digests/base/${baseDigest#sha256:}"
           touch "/tmp/digests/builder/${builderDigest#sha256:}"
+          tree /tmp/digests
 
       - id: upload-digests
         uses: actions/upload-artifact@v4
@@ -168,6 +169,7 @@ jobs:
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
+          overwrite: true
 
   combine_manifests:
     if: ${{ inputs.pushToRegistry || true }}
@@ -178,7 +180,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix: 
-        version: ${{ fromJson(needs.configure_builds.outputs.matrix.version) }}
+        version: ${{ fromJson(needs.configure_builds.outputs.matrix_versions) }}
     permissions:
       packages: write
     steps:
@@ -214,9 +216,9 @@ jobs:
             ${{ env.REGISTRY_BASE }}/govuk-ruby-base
           labels: |
             org.opencontainers.image.title=govuk-ruby-base
-            org.opencontainers.image.authors=GOV.UK Platform Engineering
-            org.opencontainers.image.description=Base Image for GOV.UK Ruby-based Apps
-            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
+            org.opencontainers.image.authors="GOV.UK Platform Engineering"
+            org.opencontainers.image.description="Base Image for GOV.UK Ruby-based Apps"
+            org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
             org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
@@ -225,6 +227,12 @@ jobs:
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
             type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
+
+      - name: Create Manifest Lists (for Base)
+        working-directory: /tmp/digests/base
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-base@sha256:%s ' *)  
 
       - name: Generate Builder Image Metadata
         uses: docker/metadata-action@v5
@@ -236,9 +244,9 @@ jobs:
             ${{ env.REGISTRY_BASE }}/govuk-ruby-builder
           labels: |
             org.opencontainers.image.title=govuk-ruby-builder
-            org.opencontainers.image.authors=GOV.UK Platform Engineering
-            org.opencontainers.image.description=Builder Image for GOV.UK Ruby-based Apps
-            org.opencontainers.image.source=https://github.com/alphagov/govuk-ruby-images
+            org.opencontainers.image.authors="GOV.UK Platform Engineering"
+            org.opencontainers.image.description="Builder Image for GOV.UK Ruby-based Apps"
+            org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
             org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
@@ -248,12 +256,10 @@ jobs:
             type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
 
-      - name: Create Manifest Lists
-        working-directory: /tmp/digests
+      - name: Create Manifest Lists (for Builder)
+        working-directory: /tmp/digests/builder
         run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.base-image-metadata.outputs.json }}") \
-            $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-base@sha256:%s ' *)  
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.builder-image-metadata.outputs.json }}") \
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-builder@sha256:%s ' *)  
 
       - name: Inspect Images
