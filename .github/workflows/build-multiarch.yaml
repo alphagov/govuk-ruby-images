@@ -228,6 +228,12 @@ jobs:
             type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
 
+      - name: Create Manifest Lists (for Base)
+        working-directory: /tmp/digests/base
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-base@sha256:%s ' *)  
+
       - name: Generate Builder Image Metadata
         uses: docker/metadata-action@v5
         id: builder-image-metadata
@@ -250,26 +256,10 @@ jobs:
             type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
 
-      - name: Debug - Step Output
-        run: |
-          echo "Github steps.base-image-metadata.outputs.json output:"
-          echo ${{ steps.base-image-metadata.outputs.json }}
-          echo "========"
-          echo "DOCKER_METADATA_OUTPUT_JSON Env Var Output:"
-          echo $DOCKER_METADATA_OUTPUT_JSON
-
-      - name: Create Manifest Lists (for Base)
-        working-directory: /tmp/digests/base
-        run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.base-image-metadata.outputs.json }}") \
-            $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-base@sha256:%s ' *)  
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.builder-image-metadata.outputs.json }}") \
-            $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-builder@sha256:%s ' *)  
-
       - name: Create Manifest Lists (for Builder)
         working-directory: /tmp/digests/builder
         run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.builder-image-metadata.outputs.json }}") \
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-builder@sha256:%s ' *)  
 
       - name: Inspect Images
