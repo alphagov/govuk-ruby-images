@@ -165,7 +165,7 @@ jobs:
       - id: upload-digests
         uses: actions/upload-artifact@v4
         with:
-          name: digests-base-${{ matrix.arch }}
+          name: digests-base-${{ join(matrix.version.rubyver, '.') }}-${{ matrix.arch }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
