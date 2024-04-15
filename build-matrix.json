@@ -15,7 +15,14 @@
             "extra": "latest"
         }
     ],
-    "arch": [
-        "amd64", "arm64"
+    "runs_on": [
+        {
+            "runner_type": "ubuntu-latest",
+            "arch": "amd64"
+        },
+        {
+            "runner_type": "arm64-runner",
+            "arch": "arm64"
+        }
     ]
 }

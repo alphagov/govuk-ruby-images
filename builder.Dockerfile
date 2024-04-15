@@ -1,6 +1,6 @@
 ARG OWNER=alphagov
-ARG RUBY_MAJOR RUBY_CHECKSUM
-FROM --platform=$TARGETPLATFORM ghcr.io/${OWNER}/govuk-ruby-base:${RUBY_MAJOR}
+ARG BASE_IMAGE_DIGEST
+FROM --platform=$TARGETPLATFORM ghcr.io/${OWNER}/govuk-ruby-base@${BASE_IMAGE_DIGEST}
 
 RUN install_packages \
     g++ git gpg libc-dev libcurl4-openssl-dev libgdbm-dev libssl-dev \
