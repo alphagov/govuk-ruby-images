@@ -97,7 +97,7 @@ jobs:
             ${{ env.REGISTRY_BASE }}/govuk-ruby-base
           tags: |
             type=semver,pattern={{raw}},value=${{ join(matrix.version.rubyver, '.') }}
-            type=semver,pattern={{raw}},value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
             type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
@@ -120,7 +120,7 @@ jobs:
             ${{ env.REGISTRY_BASE }}/govuk-ruby-builder
           tags: |
             type=semver,pattern={{raw}},value=${{ join(matrix.version.rubyver, '.') }}
-            type=semver,pattern={{raw}},value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
             type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
@@ -237,7 +237,7 @@ jobs:
             org.opencontainers.image.vendor=GDS
           tags: |
             type=semver,pattern={{raw}},value=${{ join(matrix.version.rubyver, '.') }}
-            type=semver,pattern={{raw}},value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
             type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
@@ -266,7 +266,7 @@ jobs:
             org.opencontainers.image.vendor=GDS
           tags: |
             type=semver,pattern={{raw}},value=${{ join(matrix.version.rubyver, '.') }}
-            type=semver,pattern={{raw}},value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
             type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
