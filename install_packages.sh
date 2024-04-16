@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 # Script for installing packages and removing apt cache
 
-set -eu
+set -eux
 export DEBIAN_FRONTEND=noninteractive
 n=0
 max=2
