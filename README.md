@@ -3,9 +3,19 @@
 
 ## What's in this repo
 
-This repo contains Docker images intented for use as a base for GOV.UK app containers.
-The govuk-ruby-base image contains a Ruby installation, along with node.js and yarn.
-The govuk-ruby-builder image contains environment variables and configuration for building Ruby applications.
+The govuk-ruby-images repository defines [OCI] container images for building and running production Ruby applications on Kubernetes.
+
+- `govuk-ruby-base` is a base image for production application containers; it provides:
+  - a Ruby runtime that can run as an unprivileged user with a read-only filesystem
+  - database client libraries
+  - a Node.js runtime
+
+- `govuk-ruby-builder` is for building application container images; it provides the same as `govuk-ruby-base` plus:
+  - a C/C++ toolchain and various build tools and utilities
+  - Yarn, for building/installing Node.js package dependencies
+  - configuration to speed up and optimise building Ruby applications
+
+[OCI]: https://opencontainers.org/
 
 
 ## Usage
@@ -13,14 +23,21 @@ The govuk-ruby-builder image contains environment variables and configuration fo
 Use the two images in your app's Dockerfile:
 
 ```dockerfile
-FROM ghcr.io/alphagov/govuk-ruby-builder:3.0 AS builder
+ARG ruby_version=3.3
+ARG base_image=ghcr.io/alphagov/govuk-ruby-base:$ruby_version
+ARG builder_image=ghcr.io/alphagov/govuk-ruby-builder:$ruby_version
+
+FROM $builder_image AS builder
 
 # your build steps here
 
-FROM ghcr.io/alphagov/govuk-ruby-base:3.0
+FROM $base_image
 
 # your app image steps here
 ```
+
+See [alphagov/frontend/Dockerfile](https://github.com/alphagov/frontend/blob/-/Dockerfile) for a full, real-world example.
+
 
 ## Common problems and resolutions
 
@@ -32,28 +49,15 @@ assume they can write to `Path.join(Rails.root, 'tmp')` so that we can run with
 `readOnlyRootFilesystem`.
 
 
-## Managing Ruby versions
+## Add or update a Ruby version
 
-Ruby version information is kept in the [versions](versions/) directory. Each file in this directory is a shell script containing three variables that define a Ruby version:
+The file [build-matrix.json](/build-matrix.json) defines the Ruby versions and image tags that we build.
 
-* `RUBY_MAJOR`: The major and minor Ruby version, excluding the patch version. For example, `3.2`. The image will be tagged with this version number (with `.` instead of `_`) unless `RUBY_IS_PATCH` is equal to the string `true`.
-* `RUBY_VERSION`: The full Ruby version, including patch version. This is used to download the Ruby source distribution. The image will be tagged with this version number, regardless of the value of `RUBY_IS_PATCH`.
-* `RUBY_IS_PATCH`: If equal to the string `true` then this version will **not** be tagged with the major.minor version number. (It will be tagged only with the full version number that includes the patch version.)
+The `checksum` field is currently the SHA-256 hash of the Ruby source tarball. We verify this in the build.
 
-
-### Hashes of source tarballs for verification
-
-The file [SHA256SUMS](SHA256SUMS) contains the SHA-256 hashes of the Ruby and OpenSSL source tarballs. These are verified at build-time.
-
-To add hashes for new Ruby/OpenSSL versions:
-
-1. Download the new source tarball(s).
-
-1. Run `sha256sum *gz >>SHA256SUMS`. If your system doesn't have `sha256sum`, try `shasum -a256`.
-
-1. Compare the new hashes with those listed on the [Ruby downloads page](https://www.ruby-lang.org/en/downloads/) and [OpenSSL downloads page](https://www.openssl.org/source/).
+See [Ruby Releases](https://www.ruby-lang.org/en/downloads/releases/) for the list of available Ruby tarballs and their SHA digests.
 
 
 ## Team
 
-[GOV.UK Platform Engineering team](https://github.com/orgs/alphagov/teams/gov-uk-platform-engineering) looks after this repo. If you're inside GDS, you can find us in [#govuk-platform-engineering](https://gds.slack.com/channels/govuk-platform-engineering) or view our [kanban board](https://trello.com/b/u4FCzm53/).
+[GOV.UK Platform Engineering team](https://github.com/orgs/alphagov/teams/gov-uk-platform-engineering) looks after this repo. If you're inside GDS, you can find us in [#govuk-platform-engineering](https://gds.slack.com/channels/govuk-platform-engineering) or view our [kanban board](https://github.com/orgs/alphagov/projects/71).
