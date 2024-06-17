@@ -37,10 +37,6 @@ RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dear
 WORKDIR /usr/src/ruby
 RUN set -x; \
     MAKEFLAGS=-j"$(nproc)"; export MAKEFLAGS; \
-    if [[ "$RUBY_VERSION" = "3.3.0" && "$TARGETARCH" = "arm64" ]]; then \
-      : "workaround for https://bugs.ruby-lang.org/issues/20085"; \
-      ASFLAGS="-mbranch-protection=pac-ret"; export ASFLAGS; \
-    fi; \
     ruby_tarball="ruby-${RUBY_VERSION}.tar.gz"; \
     curl -fsSLO "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR}/${ruby_tarball}"; \
     echo "${RUBY_CHECKSUM} ${ruby_tarball}" | sha256sum --check --strict --status; \
@@ -123,8 +119,8 @@ ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
 COPY --from=builder /usr/share/keyrings/nodesource.gpg /usr/share/keyrings/
 RUN install_packages ca-certificates curl libjemalloc-dev libgdbm6 libyaml-0-2 \
       libmariadb3 libpq5 mariadb-client postgresql-client tzdata; \
-    echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x jammy main" | tee /etc/apt/sources.list.d/nodesource.list; \
-    install_packages nodejs; \
+      curl -fsSL https://deb.nodesource.com/setup_18.x | bash; \
+    apt-get install -y nodejs; \
     echo -n node version:\ ; node -v; \
     echo -n npm version:\ ; npm -v; \
     npm install -g yarn@1.22.19
