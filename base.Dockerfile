@@ -1,4 +1,4 @@
-FROM --platform=$TARGETPLATFORM public.ecr.aws/lts/ubuntu:22.04_stable AS builder
+FROM --platform=$TARGETPLATFORM public.ecr.aws/lts/ubuntu:24.04_stable AS builder
 ARG TARGETARCH
 
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
@@ -60,7 +60,7 @@ RUN set -x; \
     gem cleanup;
 
 
-FROM --platform=$TARGETPLATFORM public.ecr.aws/lts/ubuntu:22.04_stable
+FROM --platform=$TARGETPLATFORM public.ecr.aws/lts/ubuntu:24.04_stable
 
 LABEL org.opencontainers.image.title="govuk-ruby-base"
 LABEL org.opencontainers.image.authors="GOV.UK Platform Engineering"
