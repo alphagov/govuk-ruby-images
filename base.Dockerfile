@@ -118,7 +118,8 @@ ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
 # Install node.js, yarn and other runtime dependencies.
 COPY --from=builder /usr/share/keyrings/nodesource.gpg /usr/share/keyrings/
 
-RUN install_packages ca-certificates curl libjemalloc-dev libgdbm6 libyaml-0-2 \
+RUN install_packages ca-certificates curl libjemalloc-dev libgdbm6 \
+      libjsonnet0 libyaml-0-2 \
       libmariadb3 libpq5 mariadb-client postgresql-client tzdata; \
       curl -fsSL https://deb.nodesource.com/setup_18.x | bash; \
     install_packages nodejs; \
