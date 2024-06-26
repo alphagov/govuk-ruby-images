@@ -4,7 +4,7 @@ FROM --platform=$TARGETPLATFORM ghcr.io/${OWNER}/govuk-ruby-base@${BASE_IMAGE_DI
 
 RUN install_packages \
     g++ git gpg libc-dev libcurl4-openssl-dev libgdbm-dev libssl-dev \
-    libmariadb-dev-compat libpq-dev libyaml-dev make xz-utils
+    libmariadb-dev-compat libpq-dev libjsonnet-dev libyaml-dev make xz-utils
 
 # Environment variables to make build cleaner and faster
 ENV BUNDLE_IGNORE_MESSAGES=1 \
