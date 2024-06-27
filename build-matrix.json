@@ -21,7 +21,7 @@
             "arch": "amd64"
         },
         {
-            "runner_type": "arm64-runner",
+            "runner_type": "ubuntu-24.04-arm",
             "arch": "arm64"
         }
     ]
