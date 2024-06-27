@@ -9,7 +9,7 @@ on:
         type: string
         default: main
       pushToRegistry:
-        description: Push to Registry. Set to false to test the build without pushing.
+        description: Push to image registry. Set to false to build without pushing.
         required: true
         type: boolean
         default: true
@@ -96,15 +96,14 @@ jobs:
           images: |
             ${{ env.REGISTRY_BASE }}/govuk-ruby-base
           tags: |
-            type=semver,pattern={{raw}},value=${{ join(matrix.version.rubyver, '.') }}
             type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
-            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
-            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
+            type=sha,enable=true,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-,format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-
           labels: |
             org.opencontainers.image.title=govuk-ruby-base
             org.opencontainers.image.authors="GOV.UK Platform Engineering"
-            org.opencontainers.image.description="Base Image for GOV.UK Ruby-based Apps"
+            org.opencontainers.image.description="Base image for GOV.UK Ruby apps"
             org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
             org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
@@ -119,11 +118,10 @@ jobs:
           images: |
             ${{ env.REGISTRY_BASE }}/govuk-ruby-builder
           tags: |
-            type=semver,pattern={{raw}},value=${{ join(matrix.version.rubyver, '.') }}
             type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
-            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
-            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
+            type=sha,enable=true,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-,format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-
           labels: |
             org.opencontainers.image.title=govuk-ruby-builder
             org.opencontainers.image.authors="GOV.UK Platform Engineering"
@@ -230,17 +228,16 @@ jobs:
           labels: |
             org.opencontainers.image.title=govuk-ruby-base
             org.opencontainers.image.authors="GOV.UK Platform Engineering"
-            org.opencontainers.image.description="Base Image for GOV.UK Ruby-based Apps"
+            org.opencontainers.image.description="Base image for GOV.UK Ruby apps"
             org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
             org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
           tags: |
-            type=semver,pattern={{raw}},value=${{ join(matrix.version.rubyver, '.') }}
             type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
-            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
-            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
+            type=sha,enable=true,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-,format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-
 
       - name: Create Manifest Lists (for Base)
         working-directory: /tmp/digests/base
@@ -265,11 +262,10 @@ jobs:
             org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
           tags: |
-            type=semver,pattern={{raw}},value=${{ join(matrix.version.rubyver, '.') }}
             type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
-            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
-            type=sha,enable=true,priority=100,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
+            type=sha,enable=true,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-,format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-
 
       - name: Create Manifest Lists (for Builder)
         working-directory: /tmp/digests/builder
