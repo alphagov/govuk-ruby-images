@@ -9,6 +9,8 @@ jobs:
   gc_old_images:
     name: Delete untagged images except for the most recent 10
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     strategy:
       matrix:
         pkg:
