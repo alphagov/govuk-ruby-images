@@ -36,14 +36,11 @@ build_version() {
       --build-arg "RUBY_VERSION=${ruby_version}" \
       --build-arg "RUBY_CHECKSUM=$(sha_for_version "$ruby_version")" \
       -t "ghcr.io/alphagov/${image_name}:${ruby_major_minor}" \
-      -t "ghcr.io/alphagov/${image_name}:${ruby_major_minor}" \
-      -t "ghcr.io/alphagov/${image_name}:${ruby_version}" \
       -f "${img}.Dockerfile" .
 
     if [[ ${PUSH_TO_REGISTRY:-} = "1" ]]; then
       echo "pushing to registry"
       docker push "ghcr.io/alphagov/${image_name}:${ruby_major_minor}"
-      docker push "ghcr.io/alphagov/${image_name}:${ruby_version}"
     fi
   done
 }
