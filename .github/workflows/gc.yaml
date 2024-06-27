@@ -1,0 +1,23 @@
+name: Garbage-collect untagged images
+
+on:
+  schedule:
+    - cron: '27 2 * * 0'
+  workflow_dispatch:
+
+jobs:
+  gc_old_images:
+    name: Delete untagged images except for the most recent 10
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        pkg:
+          - govuk-ruby-base
+          - govuk-ruby-builder
+    steps:
+      - uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ matrix.pkg }}
+          package-type: container
+          min-versions-to-keep: 10
+          delete-only-untagged-versions: 'true'
