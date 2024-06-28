@@ -1,4 +1,4 @@
-name: Garbage-collect untagged images
+name: Garbage-collect old images
 
 on:
   schedule:
@@ -6,9 +6,31 @@ on:
   workflow_dispatch:
 
 jobs:
-  gc_old_images:
-    name: Delete untagged images except for the most recent 10
+  read_tags:
+    name: Read tags from build-matrix.json
     runs-on: ubuntu-latest
+    outputs:
+      supported_tags_regex: ${{ steps.get_tags.outputs.supported_tags_regex }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+      - id: get_tags
+        run: |
+          # Construct a regex matching only the supported tags
+          # from build-matrix.json, allowing optional suffixes (commit shas).
+          # Example output regex: ^((3\.2|3\.3)(-.*)?|latest|keep-me)$
+          # Examples of matching tags: 3.3, 3.3-acecafe, 3.2-facedbadbeef172900000000
+          echo "supported_tags_regex=^(($(
+            <build-matrix.json jq -cr '[.version[].rubyver[:2] | join("\\.")] | join("|")'
+          ))(-.*)?|$(
+            <build-matrix.json jq -cr '[.version[].extra | select(length > 0)] | join("|")'
+          ))\$" >> $GITHUB_OUTPUT
+
+  gc_old_images:
+    name: GC old images
+    runs-on: ubuntu-latest
+    needs: read_tags
     permissions:
       packages: write
     strategy:
@@ -18,8 +40,16 @@ jobs:
           - govuk-ruby-builder
     steps:
       - uses: actions/delete-package-versions@v5
+        name: GC untagged images except 10 most recent
         with:
           package-name: ${{ matrix.pkg }}
           package-type: container
           min-versions-to-keep: 10
           delete-only-untagged-versions: 'true'
+      - uses: actions/delete-package-versions@v5
+        name: GC tagged images for no-longer-supported tags
+        with:
+          package-name: ${{ matrix.pkg }}
+          package-type: container
+          min-versions-to-keep: 10
+          ignore-versions: ${{ needs.read_tags.outputs.supported_tags_regex }}
