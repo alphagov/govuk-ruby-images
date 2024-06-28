@@ -1,23 +1,28 @@
-name: Run linters/fixers
+---
+name: Lint
 on: [push]
+permissions: {}
 jobs:
-  shellcheck:
-    name: Shellcheck
+  superlinter:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
     steps:
     - uses: actions/checkout@v4
       with:
+        fetch-depth: 0
         show-progress: false
-    - name: Run ShellCheck
-      uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38  # 2.0.0
-  hadolint:
-    name: Hadolint
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        show-progress: false
-    - uses: jbergstroem/hadolint-gh-action@eac45b98f6d761309202bd201205a8f8c988bfad  # v1.11.0
-      with:
-        dockerfile: '**/*Dockerfile'
-        error_level: '1'  # Fail on warning or above.
+    - uses: github/super-linter@v6
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VALIDATE_BASH: true
+        VALIDATE_BASH_EXEC: true
+        VALIDATE_DOCKERFILE_HADOLINT: true
+        VALIDATE_EDITORCONFIG: true
+        VALIDATE_ENV: true
+        VALIDATE_GITHUB_ACTIONS: true
+        VALIDATE_JSON: true
+        VALIDATE_MARKDOWN: true
+        VALIDATE_YAML: true
