@@ -36,9 +36,9 @@ jobs:
           show-progress: false
       - id: set-matrix
         run: |
-          echo "matrix=$(jq -c . < build-matrix.json)" >> $GITHUB_OUTPUT
-          echo "matrix_versions=$(jq -c .version < build-matrix.json)" >> $GITHUB_OUTPUT
-          echo "runs_on=$(jq -c .runs_on < build-matrix.json)" >> $GITHUB_OUTPUT
+          echo "matrix=$(jq -c . < build-matrix.json)" >> "$GITHUB_OUTPUT"
+          echo "matrix_versions=$(jq -c .version < build-matrix.json)" >> "$GITHUB_OUTPUT"
+          echo "runs_on=$(jq -c .runs_on < build-matrix.json)" >> "$GITHUB_OUTPUT"
 
   build_and_push_image:
     name: Build ruby_${{ join(matrix.version.rubyver, '.') }} for ${{ matrix.runs_on.arch }} and push to GHCR
@@ -67,7 +67,7 @@ jobs:
         id: calculate-image-tags
         run: |
           CREATED_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          echo "createdDate=${CREATED_DATE}" >> $GITHUB_OUTPUT
+          echo "createdDate=${CREATED_DATE}" >> "$GITHUB_OUTPUT"
 
       - name: Generate Base Image Metadata
         uses: docker/metadata-action@v5
@@ -190,7 +190,7 @@ jobs:
         id: calculate-image-tags
         run: |
           CREATED_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          echo "createdDate=${CREATED_DATE}" >> $GITHUB_OUTPUT
+          echo "createdDate=${CREATED_DATE}" >> "$GITHUB_OUTPUT"
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -224,6 +224,7 @@ jobs:
       - name: Create Manifest Lists (for Base)
         working-directory: /tmp/digests/base
         run: |
+          # shellcheck disable=SC2046
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-base@sha256:%s ' *)  
 
@@ -252,6 +253,7 @@ jobs:
       - name: Create Manifest Lists (for Builder)
         working-directory: /tmp/digests/builder
         run: |
+          # shellcheck disable=SC2046
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-builder@sha256:%s ' *)  
 
