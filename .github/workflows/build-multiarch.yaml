@@ -36,9 +36,11 @@ jobs:
           show-progress: false
       - id: set-matrix
         run: |
-          echo "matrix=$(jq -c . < build-matrix.json)" >> "$GITHUB_OUTPUT"
-          echo "matrix_versions=$(jq -c .version < build-matrix.json)" >> "$GITHUB_OUTPUT"
-          echo "runs_on=$(jq -c .runs_on < build-matrix.json)" >> "$GITHUB_OUTPUT"
+          {
+            echo "matrix=$(jq -c . < build-matrix.json)"
+            echo "matrix_versions=$(jq -c .version < build-matrix.json)"
+            echo "runs_on=$(jq -c .runs_on < build-matrix.json)"
+          } >> "$GITHUB_OUTPUT"
 
   build_and_push_image:
     name: Build ruby_${{ join(matrix.version.rubyver, '.') }} for ${{ matrix.runs_on.arch }} and push to GHCR
