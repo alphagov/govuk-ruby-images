@@ -25,7 +25,7 @@ jobs:
             jq <build-matrix.json -cr '[.version[].rubyver[:2] | join("\\.")] | join("|")'
           ))(-.*)?|$(
             jq <build-matrix.json -cr '[.version[].extra | select(length > 0)] | join("|")'
-          ))\$" >> $GITHUB_OUTPUT
+          ))\$" >> "$GITHUB_OUTPUT"
 
   gc_old_images:
     name: GC old images
