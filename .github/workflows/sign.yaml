@@ -30,7 +30,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: "arn:aws:iam::172025368201:role/github_action_ecr_push"
+          role-to-assume: "arn:aws:iam::172025368201:role/github_action_image_attestation"
           role-session-name: sign-govuk-ruby-images
           aws-region: eu-west-1
       - name: Create attestation
