@@ -2,16 +2,16 @@
     "version": [
         {
             "rubyver": [
-                "3", "2", "4"
+                "3", "2", "5"
             ],
-            "checksum": "c72b3c5c30482dca18b0f868c9075f3f47d8168eaf626d4e682ce5b59c858692",
+            "checksum": "ef0610b498f60fb5cfd77b51adb3c10f4ca8ed9a17cb87c61e5bea314ac34a16",
             "extra": ""
         },
         {
             "rubyver": [
-                "3", "3", "3"
+                "3", "3", "4"
             ],
-            "checksum": "83c05b2177ee9c335b631b29b8c077b4770166d02fa527f3a9f6a40d13f3cce2",
+            "checksum": "fe6a30f97d54e029768f2ddf4923699c416cdbc3a6e96db3e2d5716c7db96a34",
             "extra": "latest"
         }
     ],
