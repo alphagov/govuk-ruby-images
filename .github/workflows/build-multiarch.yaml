@@ -81,9 +81,12 @@ jobs:
             ${{ env.REGISTRY_BASE }}/govuk-ruby-base
           tags: |
             type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            type=raw,value=${{ join(matrix.version.rubyver, '.') }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
             type=sha,enable=true,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-,format=short
+            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-
+            type=sha,enable=true,priority=200,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
           labels: |
             org.opencontainers.image.title=govuk-ruby-base
             org.opencontainers.image.authors="GOV.UK Platform Engineering"
@@ -103,9 +106,12 @@ jobs:
             ${{ env.REGISTRY_BASE }}/govuk-ruby-builder
           tags: |
             type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            type=raw,value=${{ join(matrix.version.rubyver, '.') }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
             type=sha,enable=true,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-,format=short
+            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-
+            type=sha,enable=true,priority=200,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
           labels: |
             org.opencontainers.image.title=govuk-ruby-builder
             org.opencontainers.image.authors="GOV.UK Platform Engineering"
@@ -219,9 +225,12 @@ jobs:
             org.opencontainers.image.vendor=GDS
           tags: |
             type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            type=raw,value=${{ join(matrix.version.rubyver, '.') }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
             type=sha,enable=true,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-,format=short
+            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-
+            type=sha,enable=true,priority=200,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
 
       - name: Create Manifest Lists (for Base)
         working-directory: /tmp/digests/base
@@ -248,15 +257,19 @@ jobs:
             org.opencontainers.image.vendor=GDS
           tags: |
             type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            type=raw,value=${{ join(matrix.version.rubyver, '.') }}
             type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
             type=sha,enable=true,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-,format=short
+            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
             type=sha,enable=true,priority=100,format=long,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-
+            type=sha,enable=true,priority=200,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
 
       - name: Create Manifest Lists (for Builder)
         working-directory: /tmp/digests/builder
         run: |
           # shellcheck disable=SC2046
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(jq -cr '.labels | to_entries | map("--annotation '" + (.key + "=" + .value) + "'") | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-builder@sha256:%s ' *)  
 
       - name: Inspect Images
