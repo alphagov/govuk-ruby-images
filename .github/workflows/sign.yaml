@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: ['3.2', '3.3']
+        version: ['3.2', '3.3', '3.4']
     permissions:
       packages: write
       id-token: write
