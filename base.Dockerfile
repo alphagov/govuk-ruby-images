@@ -121,7 +121,7 @@ COPY --from=builder /usr/share/keyrings/nodesource.gpg /usr/share/keyrings/
 RUN install_packages ca-certificates curl libjemalloc-dev libgdbm6 \
       libjsonnet0 libyaml-0-2 \
       libmariadb3 libpq5 mariadb-client postgresql-client tzdata; \
-      curl -fsSL https://deb.nodesource.com/setup_18.x | bash; \
+      curl -fsSL https://deb.nodesource.com/setup_22.x | bash; \
     install_packages nodejs; \
     echo -n node version:\ ; node -v; \
     echo -n npm version:\ ; npm -v; \
