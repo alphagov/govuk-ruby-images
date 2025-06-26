@@ -30,9 +30,8 @@ ENV LANG=C.UTF-8 \
     HISTFILE=/dev/null \
     RUBY_VERSION=$RUBY_VERSION
 
-COPY /ruby /home/builder/package/ruby
+COPY --chown=builder:abuild /ruby /home/builder/package/ruby
 RUN apk update \
-    && chown builder:abuild -R /home/builder/package/ruby \
     && chmod 755 /home/builder/package/ruby \
     && chmod 644 /home/builder/package/ruby/*.patch
 
@@ -125,7 +124,8 @@ ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
 
 RUN apk add --no-cache curl gdbm jsonnet-libs yaml-dev mariadb-dev libpq \
         mariadb-client postgresql-client tzdata \
-    && npm install -g yarn@1.22.22 --force 
+    && npm install -g yarn@1.22.22 --force \
+    && rm -rf /var/cache/apk/*
 
 # Crude smoke test of with_tmpdir_for_ruby.sh. Assert that Ruby Dir.tmpdir
 # returns /tmp or a subdirectory of /tmp.
