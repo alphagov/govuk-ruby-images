@@ -1,0 +1,4 @@
+.abuild/
+.local/
+pkg/
+src/

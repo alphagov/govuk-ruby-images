@@ -1,0 +1,193 @@
+# Contributor: Carlo Landmeter <clandmeter@alpinelinux.org>
+# Contributor: Jakub Jirutka <jakub@jirutka.cz>
+# Maintainer: Jakub Jirutka <jakub@jirutka.cz>
+pkgname=ruby
+# When upgrading, upgrade also each ruby-<name> aport listed in file
+# gems/bundled_gems. If some aport is missing or not in the main repo,
+# create/move it.
+pkgver="${RUBY_VERSION}"
+_abiver="${pkgver%.*}.0"
+pkgrel=0
+pkgdesc="An object-oriented language for quick and easy programming"
+url="https://www.ruby-lang.org/"
+arch="aarch64"
+license="Ruby AND BSD-2-Clause AND MIT"
+depends="ca-certificates"
+depends_dev="
+	$pkgname=$pkgver-r$pkgrel
+	$pkgname-rdoc=$pkgver-r$pkgrel
+	gmp-dev
+	libucontext-dev
+	"
+makedepends="$depends_dev
+	autoconf
+	cargo
+	gdbm-dev
+	libffi-dev
+	linux-headers
+	openssl-dev>3
+	readline-dev
+	yaml-dev
+	zlib-dev
+	"
+install="$pkgname.post-upgrade"
+subpackages="$pkgname-dbg $pkgname-doc $pkgname-dev
+	$pkgname-rdoc::noarch
+	$pkgname-libs
+	$pkgname-full::noarch
+	"
+source="https://cache.ruby-lang.org/pub/ruby/${pkgver%.*}/ruby-$pkgver.tar.gz
+	test_insns-lower-recursion-depth.patch
+	fix-get_main_stack.patch
+	dont-install-bundled-gems.patch
+	fix-riscv64-build.patch
+	"
+
+_gemdir="/usr/lib/ruby/gems/$_abiver"
+_rubydir="/usr/lib/ruby/$_abiver"
+
+prepare() {
+	default_prepare
+	autoconf
+
+	case "$CARCH" in
+		# v2.7.1 - Of all the bootstraptest only test_fiber fails on s390x:
+		#  test_fiber.rb bootstraptest.tmp.rb:8: [BUG] vm_call_cfunc: cfp consistency error (0x000003ffb63fefb0, 0x000003ffb42f5f58)
+		# v3.4.3 - and also one assert in test_reactor (FIXME):
+		#  bootstraptest.test_ractor.rb_1914_1381.rb:8:in 'block in <main>': uninitialized constant Benchmark (NameError)
+		s390x) rm bootstraptest/test_fiber.rb bootstraptest/test_ractor.rb;;
+
+		# v3.4.3 - One assert in test_reactor (#1287 test_ractor.rb:180) fails (FIXME):
+		#  => nil (expected "[:ok, :ok, :ok]")
+		riscv64) rm bootstraptest/test_ractor.rb;;
+	esac
+
+	local name ver; while read -r name ver _; do
+		case "$name=$ver" in
+			[a-z]*=[0-9]*.[0-9]*)
+				if ! apk add -qs "ruby-$name>=$ver" >/dev/null 2>&1; then
+					warning "bump package ruby-$name to version $ver"
+				fi
+				echo "ruby-$name>=$ver" >> "$srcdir"/.ruby-full.depends
+		esac
+	done < "$builddir"/gems/bundled_gems
+}
+
+build() {
+	# -fomit-frame-pointer makes ruby segfault, see gentoo bug #150413
+	#  In many places aliasing rules are broken; play it safe
+	#  as it's risky with newer compilers to leave it as it is.
+	# -O2 - ruby is a language runtime, so performance is crucial. Moreover,
+	#  ruby 3.1.1 fails with Bus Error when compiled with -Os on armhf/armv7.
+	#  This makes ruby-libs 7% bigger (13.4 -> 14.4 MiB).
+	export CFLAGS="${CFLAGS/-Os/-O2} -fno-omit-frame-pointer -fno-strict-aliasing"
+	export CPPFLAGS="${CPPFLAGS/-Os/-O2} -fno-omit-frame-pointer -fno-strict-aliasing"
+
+	# Needed for coroutine stuff
+	export LIBS="-lucontext"
+
+	# ruby saves path to install. we want use $PATH
+	export INSTALL=install
+
+	# the configure script does not detect isnan/isinf as macros
+	export ac_cv_func_isnan=yes
+	export ac_cv_func_isinf=yes
+
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--infodir=/usr/share/info \
+		--with-sitedir=/usr/local/lib/site_ruby \
+		--enable-pthread \
+		--disable-install-doc \
+		--disable-rpath \
+		--enable-shared \
+		--with-mantype=man
+	make
+}
+
+check() {
+	# https://bugs.ruby-lang.org/issues/18380
+	local disable_tests="-n !/TestAddressResolve#test_socket_getnameinfo_domain_blocking/"
+
+	case "$CARCH" in
+		x86 | armhf | armv7)
+			# TestReadline#test_interrupt_in_other_thread fails on 32 bit arches according
+			# to upstream, but the test is disabled just on Travis, not in test suite.
+			# https://bugs.ruby-lang.org/issues/18393
+			disable_tests="$disable_tests -n !/TestReadline#test_interrupt_in_other_thread/"
+		;;
+	esac
+
+	make test TESTS="$disable_tests" TESTOPTS="--verbose"
+}
+
+package() {
+	make DESTDIR="$pkgdir" SUDO="" install
+
+	install -m 644 -D COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+
+	cd "$pkgdir"
+
+	# Remove bundled gem bundler; it's provided by a separate aport/package
+	# ruby-bundler.
+	rm -rf ./$_rubydir/bundler
+	rm ./$_rubydir/bundler.rb
+	rm -rf ./$_gemdir/gems/bundler-*
+	rm ./$_gemdir/specifications/default/bundler-*.gemspec
+	rm usr/bin/bundle usr/bin/bundler
+
+	# Remove bundled CA certificates; they are provided by ca-certificates.
+	rm ./$_rubydir/rubygems/ssl_certs/*/*.pem
+	rmdir ./$_rubydir/rubygems/ssl_certs/* || true
+
+	rm -Rf ./$_gemdir/cache/*
+
+	if [ -d usr/local ]; then
+		local f=$(find usr/local -type f)
+		if [ -n "$f" ]; then
+			error "Found files in /usr/local:"
+			echo "$f"
+			return 1
+		fi
+		rm -r usr/local
+	fi
+}
+
+rdoc() {
+	pkgdesc="Ruby documentation tool"
+	license="Ruby"
+	depends="$pkgname"
+
+	amove $_rubydir/rdoc
+	amove $_gemdir/gems/rdoc-*
+	amove $_gemdir/specifications/default/rdoc-*
+	amove usr/bin/ri
+	amove usr/bin/rdoc
+}
+
+libs() {
+	pkgdesc="Libraries necessary to run Ruby"
+	depends=""
+
+	amove usr/lib
+}
+
+full() {
+	pkgdesc="Ruby with all bundled gems"
+	# bundler is bundled since Ruby 2.6, so include it in ruby-full despite
+	# that it's provided by a seprate aport/package.
+	depends="ruby ruby-rdoc ruby-bundler $(cat "$srcdir"/.ruby-full.depends)"
+
+	mkdir -p "$subpkgdir"
+}
+
+sha512sums="
+ec52e338a9558e5fb0975be4249ff47a2d8c7926d8ae3af58f4e5a233f400f75da88ce8254bac7a8cd7a6b0b87fd4eb7315944c76be43719782bd0c16040197b  ruby-3.4.4.tar.gz
+16fc1f35aee327d1ecac420b091beaa53c675e0504d5a6932004f17ca68a2c38f57b053b0a3903696f2232c5add160d363e3972a962f7f7bcb52e4e998c7315d  test_insns-lower-recursion-depth.patch
+42cd45c1db089a1ae57834684479a502e357ddba82ead5fa34e64c13971e7ab7ad2919ddd60a104a817864dd3e2e35bdbedb679210eb41d82cab36a0687e43d4  fix-get_main_stack.patch
+a77da5e5eb7d60caf3f1cabb81e09b88dc505ddd746e34efd1908c0096621156d81cc65095b846ba9bdb66028891aefce883a43ddec6b56b5beb4aac5e4ee33f  dont-install-bundled-gems.patch
+000530316af1fca007fe8cee694b59e2e801674bcc1a2ebea95e67745d4afc0ce66c902fdbc88ee847a4fbf55115b183cd803cbf7c98ef685938efb3e2b7c991  fix-riscv64-build.patch
+"
