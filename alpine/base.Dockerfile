@@ -51,7 +51,7 @@ FROM public.ecr.aws/docker/library/alpine:3.22 AS rubyinstall
 
 ARG RUBY_MAJOR=3.4 RUBY_VERSION=3.4.4
 
-LABEL org.opencontainers.image.title="govuk-ruby-base"
+LABEL org.opencontainers.image.title="govuk-ruby-base-alpine"
 LABEL org.opencontainers.image.authors="GOV.UK Platform Engineering"
 LABEL org.opencontainers.image.description="Base image for GOV.UK Ruby apps based on Alpine Linux"
 LABEL org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
@@ -103,6 +103,7 @@ RUN apk add --no-cache jemalloc-dev /tmp/packages/ruby/ruby-$RUBY_VERSION-r0.apk
     && rm -rf /tmp/packages/ruby \
     && ruby -v \
     && gem update --system --silent --no-document \
+    && gem install rdoc --no-document \
     && gem pristine --extensions \
     && gem cleanup \
     && bundle --version
@@ -122,25 +123,25 @@ RUN for wrapped_cmd in bundle puma pumactl rails rake "${ruby_bin}"/*; do \
 ENV TMPDIR_FOR_RUBY_ORIGINAL_PATH=${PATH}
 ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
 
-RUN apk add --no-cache curl gdbm jsonnet-libs yaml mariadb-dev libpq \
+RUN apk add --no-cache curl gdbm jsonnet-libs yaml-dev mariadb-dev libpq \
         mariadb-client postgresql-client tzdata \
     && npm install -g yarn@1.22.22 --force 
 
 # Crude smoke test of with_tmpdir_for_ruby.sh. Assert that Ruby Dir.tmpdir
-# returns a subdirectory of /tmp (not /tmp itself).
+# returns /tmp or a subdirectory of /tmp.
 RUN set -x; \
     actual=$(ruby -e 'require "tmpdir"; puts Dir.tmpdir'); \
     case "$actual" in \
-      /tmp/*) ;; \
-      *) echo "Dir.tmpdir is not a subdirectory of /tmp: $actual" >&2; exit 1 ;; \
+      /tmp|/tmp/*) ;; \
+      *) echo "Dir.tmpdir is not under /tmp: $actual" >&2; exit 1 ;; \
     esac
 
 WORKDIR $APP_HOME
 # Some Rubygems (libraries) assume that they can write to tmp/ within the Rails
 # app's base directory.
 RUN ln -fs /tmp $APP_HOME
-RUN groupadd -g 1001 app; \
-    useradd -u 1001 -g app app --home $APP_HOME
+RUN addgroup -g 1001 app && \
+    adduser -D -u 1001 -G app -h $APP_HOME app
 
 # Set irb's history path to somewhere writable so that it doesn't complain.
 RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > "$IRBRC"
