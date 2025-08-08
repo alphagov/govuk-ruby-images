@@ -139,6 +139,7 @@ RUN set -x; \
     [ "${expected}" = "${actual}" ]
 
 WORKDIR $APP_HOME
+COPY .bashrc .irbrc ./
 # Some Rubygems (libraries) assume that they can write to tmp/ within the Rails
 # app's base directory.
 RUN ln -fs /tmp $APP_HOME
