@@ -17,12 +17,6 @@ ENV SECRET_KEY_BASE_DUMMY=1
 
 ENV GOVUK_ENVIRONMENT="development"
 
-COPY govuk_prompt.sh /etc/govuk_prompt.sh
-RUN chmod +x /etc/govuk_prompt.sh \
-    && echo '[ -f /etc/govuk_prompt.sh ] && . /etc/govuk_prompt.sh' >> /etc/bash.bashrc
-
-ENV BASH_ENV="/etc/govuk_prompt.sh"
-
 LABEL org.opencontainers.image.title="govuk-ruby-builder"
 LABEL org.opencontainers.image.authors="GOV.UK Platform Engineering"
 LABEL org.opencontainers.image.description="Builder image for GOV.UK Ruby apps"

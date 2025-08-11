@@ -148,6 +148,12 @@ RUN groupadd -g 1001 app; \
 # Set irb's history path to somewhere writable so that it doesn't complain.
 RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > "$IRBRC"
 
+COPY govuk_prompt.sh /etc/govuk_prompt.sh
+RUN chmod +x /etc/govuk_prompt.sh \
+    && echo '[ -f /etc/govuk_prompt.sh ] && . /etc/govuk_prompt.sh' >> /etc/bash.bashrc
+
+ENV BASH_ENV="/etc/govuk_prompt.sh"
+
 # Crude smoke test: assert that each of the main binaries exits cleanly and
 # that the openssl gem loads.
 RUN set -x; \
