@@ -2,23 +2,23 @@
     "version": [
         {
             "rubyver": [
-                "3", "2", "8"
+                "3", "2", "9"
             ],
-            "checksum": "77acdd8cfbbe1f8e573b5e6536e03c5103df989dc05fa68c70f011833c356075",
+            "checksum": "abbad98db9aeb152773b0d35868e50003b8c467f3d06152577c4dfed9d88ed2a",
             "extra": ""
         },
         {
             "rubyver": [
-                "3", "3", "8"
+                "3", "3", "9"
             ],
-            "checksum": "5ae28a87a59a3e4ad66bc2931d232dbab953d0aa8f6baf3bc4f8f80977c89cab",
+            "checksum": "d1991690a4e17233ec6b3c7844c1e1245c0adce3e00d713551d0458467b727b1",
             "extra": ""
         },
         {
             "rubyver": [
-                "3", "4", "4"
+                "3", "4", "5"
             ],
-            "checksum": "a0597bfdf312e010efd1effaa8d7f1d7833146fdc17950caa8158ffa3dcbfa85",
+            "checksum": "1d88d8a27b442fdde4aa06dc99e86b0bbf0b288963d8433112dd5fac798fd5ee",
             "extra": "latest"
         }
     ],
