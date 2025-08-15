@@ -1,4 +1,4 @@
-FROM --platform=$TARGETPLATFORM public.ecr.aws/lts/ubuntu:24.04_stable AS builder
+FROM public.ecr.aws/lts/ubuntu:24.04_stable AS builder
 ARG TARGETARCH
 
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
@@ -19,7 +19,7 @@ ENV LANG=C.UTF-8 \
 
 # Build-time dependencies for Ruby.
 # TODO: remove curl and gpg once downloads are done in the build script.
-RUN install_packages curl ca-certificates g++ gpg libc-dev make bison patch libdb-dev libffi-dev libgdbm-dev libgmp-dev libreadline-dev libssl-dev libyaml-dev zlib1g-dev uuid-dev libjemalloc-dev
+RUN install_packages --no-install-recommends curl ca-certificates g++ gpg libc-dev make bison patch libdb-dev libffi-dev libgdbm-dev libgmp-dev libreadline-dev libssl-dev libyaml-dev zlib1g-dev uuid-dev libjemalloc-dev rustc
 
 # Process the repo signing key for nodesource so we don't have to include gpg
 # in the final image.
@@ -56,7 +56,7 @@ RUN set -x; \
     gem cleanup;
 
 
-FROM --platform=$TARGETPLATFORM public.ecr.aws/lts/ubuntu:24.04_stable
+FROM public.ecr.aws/lts/ubuntu:24.04_stable
 
 LABEL org.opencontainers.image.title="govuk-ruby-base"
 LABEL org.opencontainers.image.authors="GOV.UK Platform Engineering"
