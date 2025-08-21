@@ -31,7 +31,7 @@ jobs:
       matrix_versions: ${{ steps.set-matrix.outputs.matrix_versions }}
       runs_on: ${{ steps.set-matrix.outputs.runs_on }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           show-progress: false
       - id: set-matrix
@@ -52,18 +52,18 @@ jobs:
       packages: write
     steps:
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ inputs.gitRef || github.ref }}
           show-progress: false
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
       - name: Calculate Image Tags
         id: calculate-image-tags
@@ -72,7 +72,7 @@ jobs:
           echo "createdDate=${CREATED_DATE}" >> "$GITHUB_OUTPUT"
 
       - name: Generate Base Image Metadata
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
         id: base-image-metadata
         with:
           flavor: |
@@ -97,7 +97,7 @@ jobs:
             org.opencontainers.image.vendor=GDS
 
       - name: Generate Builder Image Metadata
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
         id: builder-image-metadata
         with:
           flavor: |
@@ -122,7 +122,7 @@ jobs:
             org.opencontainers.image.vendor=GDS
 
       - id: build-base-image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
         with:
           file: base.Dockerfile
           context: .
@@ -139,7 +139,7 @@ jobs:
           cache-to: type=gha,scope=build-base-${{ matrix.version.rubyver }}-${{ matrix.runs_on.arch }},mode=max
 
       - id: build-builder-image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
         with:
           file: builder.Dockerfile
           context: .
@@ -164,7 +164,7 @@ jobs:
           touch "/tmp/digests/builder/${builderDigest#sha256:}"
 
       - id: upload-digests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: digests-${{ join(matrix.version.rubyver, '.') }}-${{ matrix.runs_on.arch }}
           path: /tmp/digests/*
@@ -186,13 +186,13 @@ jobs:
       packages: write
     steps:
       - name: Download Digests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: /tmp/digests
           pattern: digests-${{ join(matrix.version.rubyver, '.') }}-*
           merge-multiple: true
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
       - name: Calculate Image Tags
         id: calculate-image-tags
@@ -201,14 +201,14 @@ jobs:
           echo "createdDate=${CREATED_DATE}" >> "$GITHUB_OUTPUT"
 
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate Base Image Metadata
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
         id: base-image-metadata
         with:
           flavor: |
@@ -240,7 +240,7 @@ jobs:
             $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-base@sha256:%s ' *)  
 
       - name: Generate Builder Image Metadata
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
         id: builder-image-metadata
         with:
           flavor: |
