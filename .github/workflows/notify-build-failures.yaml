@@ -1,0 +1,66 @@
+name: Notify Build Failures
+
+on:
+  workflow_run:
+    workflows: ["Build and push multi-arch images"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify-failure:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'failure' }}
+    name: Notify Slack on Build Failure
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
+        continue-on-error: true
+        with:
+          payload: |
+            {
+              "channel": "#murilo-testing",
+              "username": "Platform Alerts",
+              "icon_emoji": ":rotating_light:",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚨 Build and push multi-arch images FAILED"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Run:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id || github.run_id }}|View Workflow Logs>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ github.event.workflow_run.head_branch || github.ref_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n${{ github.event.workflow_run.head_sha || github.sha }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Timestamp:*\n$(date '+%a %d %b %Y %H:%M UTC')"
+                    }
+                  ]
+                },
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.GOVUK_SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
