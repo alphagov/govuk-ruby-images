@@ -275,3 +275,47 @@ jobs:
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_BASE }}/govuk-ruby-base:${{ steps.base-image-metadata.outputs.version }}
           docker buildx imagetools inspect ${{ env.REGISTRY_BASE }}/govuk-ruby-builder:${{ steps.builder-image-metadata.outputs.version }}
+
+  notify_failure:
+    name: Notify Slack on Failure
+    runs-on: ubuntu-latest
+    needs:
+      - build_and_push_image
+      - combine_manifests
+    if: ${{ failure() }}
+    steps:
+      - id: get_time
+        name: Record UTC time of failure
+        run: echo "timestamp=$(date -u +"%a, %d %b %Y %H:%M:%S UTC")" >> "$GITHUB_OUTPUT"
+
+      - name: Notify failure
+        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
+        continue-on-error: true
+        with:
+          payload: |
+            {
+              "channel": "#govuk-platform-support",
+              "username": "Platform Alerts",
+              "text": ":rotating_light: *Build and push multi-arch images job FAILED!*",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":rotating_light: *Build and push multi-arch images job FAILED!*\n\n*Repository:* <https://github.com/${{ github.repository }}|${{ github.repository }}>\n*Workflow:* `${{ github.workflow }}`\n*Run ID:* <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.run_id }}>\n*Status:* ❌ Failed\n*Timestamp:* `${{ steps.get_time.outputs.timestamp }}`"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "View Workflow Logs"
+                    },
+                    "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                    "action_id": "button-view-workflow"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.GOVUK_SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
