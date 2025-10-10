@@ -51,6 +51,10 @@ jobs:
     permissions:
       packages: write
     steps:
+      - name: Test failure
+        id: test-failure
+        run: exit 1
+
       - name: Login to GHCR
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:

@@ -1,0 +1,113 @@
+name: Notify Build Failures
+
+on:
+  workflow_run:
+    workflows: ["Build and push multi-arch images"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify-failure:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'failure' }}
+    name: Notify Slack on Build Failure
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout (for gh CLI context)
+        uses: actions/checkout@v4
+
+      - name: Fetch last 40 lines of failed workflow logs
+        id: get-logs
+        continue-on-error: true
+        run: |
+          RUN_ID="${{ github.event.workflow_run.id }}"
+          if [ -z "$RUN_ID" ]; then
+            echo "Manual trigger detected – using the most recent run."
+            RUN_ID=$(gh run list --limit 1 --json databaseId -q '.[0].databaseId')
+          fi
+
+          echo "Fetching logs for run ID: $RUN_ID"
+          gh run view "$RUN_ID" \
+            --repo "${{ github.repository }}" \
+            --log > full.log 2>err.txt || true
+
+          if grep -q "no logs" err.txt || [ ! -s full.log ]; then
+            echo "⚠️ No logs available." > snippet.txt
+          else
+            tail -n 40 full.log > snippet.txt
+          fi
+
+          echo "snippet<<EOF" >> $GITHUB_OUTPUT
+          cat snippet.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
+        continue-on-error: true
+        with:
+          payload: |
+            {
+              "channel": "#murilo-testing",
+              "username": "Platform Alerts",
+              "icon_emoji": ":rotating_light:",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚨 Build and push multi-arch images FAILED (Test or Real)"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Run:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id || github.run_id }}|View Workflow Logs>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ github.event.workflow_run.head_branch || github.ref_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n${{ github.event.workflow_run.head_sha || github.sha }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Timestamp:*\n$(date '+%a %d %b %Y %H:%M UTC')"
+                    }
+                  ]
+                },
+                {
+                  "type": "divider"
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Last 40 log lines:*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "```\n${{ steps.get-logs.outputs.snippet || 'No logs available' }}\n```"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.GOVUK_SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
