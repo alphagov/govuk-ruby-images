@@ -17,6 +17,10 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      - id: get_time
+        name: Record UTC time of failure
+        run: echo "timestamp=$(date -u +"%a, %d %b %Y %H:%M:%S UTC")" >> "$GITHUB_OUTPUT"
+
       - name: Notify Slack
         uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
         continue-on-error: true
@@ -55,10 +59,10 @@ jobs:
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Timestamp:*\n$(date '+%a %d %b %Y %H:%M UTC')"
+                      "text": "*Timestamp:*\n${{ steps.get_time.outputs.timestamp }}"
                     }
                   ]
-                },
+                }
               ]
             }
         env:
