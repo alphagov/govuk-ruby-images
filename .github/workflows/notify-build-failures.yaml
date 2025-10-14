@@ -17,6 +17,57 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Fetch metadata and last 20 log lines
+        id: get-logs
+        continue-on-error: true
+        run: |
+          WORKFLOW_NAME="Build and push multi-arch images"
+          RUN_ID="${{ github.event.workflow_run.id }}"
+
+          if [ -z "$RUN_ID" ]; then
+            echo "Manual trigger detected – finding the most recent failed run of \"$WORKFLOW_NAME\"..."
+            RUN_ID=$(gh run list \
+              --workflow "$WORKFLOW_NAME" \
+              --json databaseId,conclusion,status \
+              --jq "[.[] | select(.status==\"completed\" and .conclusion==\"failure\")][0].databaseId")
+          fi
+
+          echo "Using run ID: $RUN_ID"
+
+          # Fetch metadata
+          META=$(gh run view "$RUN_ID" --repo "${{ github.repository }}" \
+            --json headBranch,headSha,displayTitle,conclusion,url,createdAt,updatedAt -q '.')
+
+          HEAD_BRANCH=$(echo "$META" | jq -r '.headBranch')
+          HEAD_SHA=$(echo "$META" | jq -r '.headSha')
+          WORKFLOW_TITLE=$(echo "$META" | jq -r '.displayTitle')
+          RUN_URL=$(echo "$META" | jq -r '.url')
+
+          # Fetch logs
+          gh run view "$RUN_ID" --repo "${{ github.repository }}" --log > full.log 2>err.txt || true
+
+          if grep -q "no logs" err.txt || [ ! -s full.log ]; then
+            echo "⚠️ No logs available." > snippet.txt
+          else
+            tail -n 20 full.log > snippet.txt
+          fi
+
+          # Escape snippet for JSON
+          SNIPPET=$(sed '1s/^/```\n/;$a```' snippet.txt | jq -Rs .)
+
+          {
+            echo "run_url=$RUN_URL"
+            echo "head_branch=$HEAD_BRANCH"
+            echo "head_sha=$HEAD_SHA"
+            echo "workflow_title=$WORKFLOW_TITLE"
+            echo "snippet=$SNIPPET"
+          } >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - id: get_time
         name: Record UTC time of failure
         run: echo "timestamp=$(date -u +"%a, %d %b %Y %H:%M:%S UTC")" >> "$GITHUB_OUTPUT"
@@ -27,7 +78,7 @@ jobs:
         with:
           payload: |
             {
-              "channel": "#murilo-testing",
+              "channel": "#govuk-platform-support",
               "username": "Platform Alerts",
               "icon_emoji": ":rotating_light:",
               "blocks": [
@@ -47,21 +98,38 @@ jobs:
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Run:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id || github.run_id }}|View Workflow Logs>"
+                      "text": "*Run:*\n<${{ steps.get-logs.outputs.run_url }}|View Workflow Logs>"
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Branch:*\n${{ github.event.workflow_run.head_branch || github.ref_name }}"
+                      "text": "*Branch:*\n<${{ github.server_url }}/${{ github.repository }}/tree/${{ steps.get-logs.outputs.head_branch }}|${{ steps.get-logs.outputs.head_branch }}>"
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Commit:*\n${{ github.event.workflow_run.head_sha || github.sha }}"
+                      "text": "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.get-logs.outputs.head_sha }}|${{ steps.get-logs.outputs.head_sha }}>"
                     },
                     {
                       "type": "mrkdwn",
                       "text": "*Timestamp:*\n${{ steps.get_time.outputs.timestamp }}"
                     }
                   ]
+                },
+                {
+                  "type": "divider"
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Last 20 log lines:*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ${{ steps.get-logs.outputs.snippet }}
+                  }
                 }
               ]
             }
