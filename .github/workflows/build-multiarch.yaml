@@ -43,8 +43,9 @@ jobs:
             echo "runs_on=$(jq -c .runs_on < build-matrix.json)"
             echo "supported_tags_regex=^(($(
               jq <build-matrix.json -cr '[.version[].rubyver[:2] | join("\\.")] | join("|")'
-            ))(-.*)?|$(
+            ))(-.*)?|($(
               jq <build-matrix.json -cr '[.version[].extra | select(length > 0)] | join("|")'
+            )))$"
           } >> "$GITHUB_OUTPUT"
 
   build_and_push_image:
