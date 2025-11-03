@@ -17,7 +17,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '34 3 * * *'
+    - cron: "34 3 * * *"
 
 env:
   REGISTRY_BASE: ghcr.io/alphagov
@@ -30,6 +30,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       matrix_versions: ${{ steps.set-matrix.outputs.matrix_versions }}
       runs_on: ${{ steps.set-matrix.outputs.runs_on }}
+      supported_tags_regex: ${{ steps.set-matrix.outputs.supported_tags_regex }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
@@ -40,6 +41,10 @@ jobs:
             echo "matrix=$(jq -c . < build-matrix.json)"
             echo "matrix_versions=$(jq -c .version < build-matrix.json)"
             echo "runs_on=$(jq -c .runs_on < build-matrix.json)"
+            echo "supported_tags_regex=^(($(
+              jq <build-matrix.json -cr '[.version[].rubyver[:2] | join("\\.")] | join("|")'
+            ))(-.*)?|$(
+              jq <build-matrix.json -cr '[.version[].extra | select(length > 0)] | join("|")'
           } >> "$GITHUB_OUTPUT"
 
   build_and_push_image:
@@ -144,7 +149,7 @@ jobs:
           file: builder.Dockerfile
           context: .
           push: false
-          platforms:  "linux/${{ matrix.runs_on.arch }}"
+          platforms: "linux/${{ matrix.runs_on.arch }}"
           load: true
           provenance: false
           build-args: |
@@ -180,7 +185,7 @@ jobs:
       - build_and_push_image
     runs-on: ubuntu-latest
     strategy:
-      matrix: 
+      matrix:
         version: ${{ fromJson(needs.configure_builds.outputs.matrix_versions) }}
     permissions:
       packages: write
@@ -237,7 +242,7 @@ jobs:
         run: |
           # shellcheck disable=SC2046
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-base@sha256:%s ' *)  
+            $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-base@sha256:%s ' *)
 
       - name: Generate Builder Image Metadata
         uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
@@ -269,9 +274,40 @@ jobs:
         run: |
           # shellcheck disable=SC2046
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-builder@sha256:%s ' *)  
+            $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-builder@sha256:%s ' *)
 
       - name: Inspect Images
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_BASE }}/govuk-ruby-base:${{ steps.base-image-metadata.outputs.version }}
           docker buildx imagetools inspect ${{ env.REGISTRY_BASE }}/govuk-ruby-builder:${{ steps.builder-image-metadata.outputs.version }}
+
+  retire_old_images:
+    if: ${{ inputs.pushToRegistry || true }}
+    name: Retire Old Images from GHCR
+    permissions:
+      packages: write
+    needs:
+      - combine_manifests
+      - configure_builds
+      - build_and_push_image
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        pkg:
+          - govuk-ruby-base
+          - govuk-ruby-builder
+    steps:
+      - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
+        name: GC untagged images except 20 most recent
+        with:
+          package-name: ${{ matrix.pkg }}
+          package-type: container
+          min-versions-to-keep: 20 # Mostly for attestations (.att).
+          delete-only-untagged-versions: "true"
+      - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
+        name: GC tagged images for no-longer-supported tags
+        with:
+          package-name: ${{ matrix.pkg }}
+          package-type: container
+          min-versions-to-keep: 10
+          ignore-versions: ${{ needs.configure_builds.outputs.supported_tags_regex }}
