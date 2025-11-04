@@ -280,4 +280,4 @@ jobs:
   retire_old_images:
     if: ${{ inputs.pushToRegistry || true }}
     name: Retire Old Images from GHCR
-    uses: ./.github/workflows/gc.yaml@main
+    uses: ./.github/workflows/gc.yaml
