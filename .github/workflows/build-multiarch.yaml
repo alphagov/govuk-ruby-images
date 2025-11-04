@@ -41,11 +41,6 @@ jobs:
             echo "matrix=$(jq -c . < build-matrix.json)"
             echo "matrix_versions=$(jq -c .version < build-matrix.json)"
             echo "runs_on=$(jq -c .runs_on < build-matrix.json)"
-            echo "supported_tags_regex=^(($(
-              jq <build-matrix.json -cr '[.version[].rubyver[:2] | join("\\.")] | join("|")'
-            ))(-.*)?|($(
-              jq <build-matrix.json -cr '[.version[].extra | select(length > 0)] | join("|")'
-            )))$"
           } >> "$GITHUB_OUTPUT"
 
   build_and_push_image:
@@ -285,30 +280,4 @@ jobs:
   retire_old_images:
     if: ${{ inputs.pushToRegistry || true }}
     name: Retire Old Images from GHCR
-    permissions:
-      packages: write
-    needs:
-      - combine_manifests
-      - configure_builds
-      - build_and_push_image
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        pkg:
-          - govuk-ruby-base
-          - govuk-ruby-builder
-    steps:
-      - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
-        name: GC untagged images except 20 most recent
-        with:
-          package-name: ${{ matrix.pkg }}
-          package-type: container
-          min-versions-to-keep: 20 # Mostly for attestations (.att).
-          delete-only-untagged-versions: "true"
-      - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
-        name: GC tagged images for no-longer-supported tags
-        with:
-          package-name: ${{ matrix.pkg }}
-          package-type: container
-          min-versions-to-keep: 10
-          ignore-versions: ${{ needs.configure_builds.outputs.supported_tags_regex }}
+    uses: ./.github/workflows/gc.yaml@main
