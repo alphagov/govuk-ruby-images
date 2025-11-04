@@ -1,8 +1,7 @@
-name: Garbage-collect old images
+name: Retire Old Images
 
 on:
-  schedule:
-    - cron: '27 2 * * 0'
+  workflow_call:
   workflow_dispatch:
 
 jobs:
@@ -28,7 +27,7 @@ jobs:
           ))\$" >> "$GITHUB_OUTPUT"
 
   gc_old_images:
-    name: GC old images
+    name: Retire old images from GHCR
     runs-on: ubuntu-latest
     needs: read_tags
     permissions:
