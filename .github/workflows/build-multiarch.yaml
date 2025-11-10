@@ -73,7 +73,7 @@ jobs:
           echo "createdDate=${CREATED_DATE}" >> "$GITHUB_OUTPUT"
 
       - name: Generate Base Image Metadata
-        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # v5.9.0
         id: base-image-metadata
         with:
           flavor: |
@@ -98,7 +98,7 @@ jobs:
             org.opencontainers.image.vendor=GDS
 
       - name: Generate Builder Image Metadata
-        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # v5.9.0
         id: builder-image-metadata
         with:
           flavor: |
@@ -209,7 +209,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate Base Image Metadata
-        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # v5.9.0
         id: base-image-metadata
         with:
           flavor: |
@@ -241,7 +241,7 @@ jobs:
             $(printf '${{ env.REGISTRY_BASE }}/govuk-ruby-base@sha256:%s ' *)
 
       - name: Generate Builder Image Metadata
-        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # v5.9.0
         id: builder-image-metadata
         with:
           flavor: |
