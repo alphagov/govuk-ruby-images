@@ -51,8 +51,7 @@ RUN set -x; \
     ; \
     make; \
     make install; \
-    gem update --system --silent --no-document; \
-    gem install bundler --version '< 4.0.0'; \
+    gem update --system '3.7.2' --silent --no-document; \
     gem pristine --extensions; \
     gem cleanup;
 
