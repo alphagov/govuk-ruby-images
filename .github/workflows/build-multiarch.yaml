@@ -16,6 +16,11 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '**.Dockerfile'
+      - 'build-matrix.json'
+      - '*.sh'
+      - '.github/workflows/build-multiarch.yaml'
   schedule:
     - cron: "34 3 * * *"
 
