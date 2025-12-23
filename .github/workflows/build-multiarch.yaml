@@ -17,10 +17,10 @@ on:
     branches:
       - main
     paths:
-      - '**.Dockerfile'
-      - 'build-matrix.json'
-      - '*.sh'
-      - '.github/workflows/build-multiarch.yaml'
+      - "**.Dockerfile"
+      - "build-matrix.json"
+      - "*.sh"
+      - ".github/workflows/build-multiarch.yaml"
   schedule:
     - cron: "34 3 * * *"
 
@@ -290,3 +290,65 @@ jobs:
     permissions:
       packages: write
     uses: ./.github/workflows/gc.yaml
+
+  notify_failure:
+    name: Notify Slack on Build Failure
+    if: ${{ failure() }}
+    needs:
+      - configure_builds
+      - build_and_push_image
+      - combine_manifests
+      - retire_old_images
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Get timestamp
+        id: timestamp
+        run: echo "time=$(date -u +"%a, %d %b %Y %H:%M:%S UTC")" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook: ${{ secrets.GOVUK_PLATFORM_SUPPORT_SLACK_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚨 Build and push multi-arch images FAILED"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Run:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow Run>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n<${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Timestamp:*\n${{ steps.timestamp.outputs.time }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Triggered by:*\n${{ github.event_name }}"
+                    }
+                  ]
+                }
+              ]
+            }
