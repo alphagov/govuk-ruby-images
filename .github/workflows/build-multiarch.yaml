@@ -179,7 +179,7 @@ jobs:
           overwrite: true
 
   combine_manifests:
-    if: ${{ inputs.pushToRegistry != false }}
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.pushToRegistry != false }}
     name: Combine Docker Manifests for Ruby ${{ join(matrix.version.rubyver, '.') }} Images
     needs:
       - configure_builds
@@ -283,7 +283,7 @@ jobs:
           docker buildx imagetools inspect ${{ env.REGISTRY_BASE }}/govuk-ruby-builder:${{ steps.builder-image-metadata.outputs.version }}
 
   retire_old_images:
-    if: ${{ inputs.pushToRegistry != false }}
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.pushToRegistry != false }}
     name: Retire Old Images from GHCR
     needs:
       - combine_manifests
