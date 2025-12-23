@@ -1,6 +1,5 @@
 # GOV.UK Ruby Images
 
-
 ## What's in this repo
 
 The govuk-ruby-images repository defines [OCI] container images for building and running production Ruby applications on Kubernetes.
@@ -17,13 +16,11 @@ The govuk-ruby-images repository defines [OCI] container images for building and
 
 [OCI]: https://opencontainers.org/
 
-
 ## Usage
 
 Use the two images in your app's Dockerfile.
 
 Specify the image tag that corresponds to the `<major>.<minor>` Ruby version that your application needs.
-
 
 ```dockerfile
 ARG ruby_version=3.3
@@ -41,7 +38,6 @@ FROM $base_image
 
 See [alphagov/frontend/Dockerfile](https://github.com/alphagov/frontend/blob/-/Dockerfile) for a full, real-world example.
 
-
 ## Supported tags
 
 Our version maintenance policy is similar to [upstream](https://www.ruby-lang.org/en/downloads/branches/) except that we drop support for a (major.minor) version series once it's no longer in use in GOV.UK.
@@ -50,7 +46,6 @@ See [build-matrix.json](build-matrix.json#L2) for the list of Ruby versions we c
 
 > [!IMPORTANT]
 > Please do not attempt to specify the Ruby patch version. See [below](#if-you-suspect-a-bug) for alternatives.
-
 
 ## Build Process
 
@@ -65,7 +60,6 @@ Images are automatically built and pushed to GitHub Container Registry in these 
 - **Manual triggers**: Can be triggered manually via GitHub Actions workflow_dispatch
 
 Failed builds trigger Slack notifications to `#govuk-platform-support`.
-
 
 ### If you suspect a bug
 
@@ -85,10 +79,9 @@ If you encounter a bug in govuk-ruby-images that breaks your application or your
 
 If you are unsure, ask [Platform Engineering team](#team) for advice.
 
-
 ## Common problems and resolutions
 
-### `ERROR: failed to solve: cannot copy to non-directory: /var/lib/docker/overlay2/.../merged/app/tmp`
+### ERROR: failed to solve: cannot copy to non-directory: /var/lib/docker/overlay2/.../merged/app/tmp
 
 Add `tmp/` to your `.dockerignore`. This is necessary because we symlink
 `$APP_HOME/tmp` to `/tmp` as a workaround for some badly-behaved gems that
@@ -103,9 +96,7 @@ official Ubuntu images which have generous rate limits for parallel builds. If r
 limiting persists, the base image can be mirrored to GHCR to eliminate external
 dependencies.
 
-
 ## Maintenance
-
 
 ### Add or update a Ruby version
 
@@ -114,7 +105,6 @@ The file [build-matrix.json](/build-matrix.json) defines the Ruby versions and i
 The `checksum` field is currently the SHA-256 hash of the Ruby source tarball. We verify this in the build.
 
 See [Ruby Releases](https://www.ruby-lang.org/en/downloads/releases/) for the list of available Ruby tarballs and their SHA digests.
-
 
 ### Build workflow maintenance
 
@@ -125,7 +115,6 @@ The build workflow (`.github/workflows/build-multiarch.yaml`) includes several f
 - **Failure notifications**: Failed builds automatically notify `#govuk-platform-support` via Slack
 - **Manual control**: Workflow can be dispatched manually with option to skip registry push for testing
 - **Multi-architecture**: Builds images for multiple Ruby versions across amd64 and arm64 architectures in parallel
-
 
 ### Slack notifications
 
@@ -138,7 +127,6 @@ If notifications stop working or need to be reconfigured:
 3. Update the repository secret manually in [GitHub Settings > Secrets and variables > Actions](https://github.com/alphagov/govuk-ruby-images/settings/secrets/actions)
 
 Contact the [Platform Engineering team](#team) if you need assistance with Slack webhook configuration.
-
 
 ### Team
 
