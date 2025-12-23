@@ -300,6 +300,7 @@ jobs:
       - combine_manifests
       - retire_old_images
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Get timestamp
         id: timestamp
