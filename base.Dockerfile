@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lts/ubuntu:24.04_stable AS builder
+FROM ubuntu:24.04 AS builder
 ARG TARGETARCH
 
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
@@ -56,7 +56,7 @@ RUN set -x; \
     gem cleanup;
 
 
-FROM public.ecr.aws/lts/ubuntu:24.04_stable
+FROM ubuntu:24.04
 
 LABEL org.opencontainers.image.title="govuk-ruby-base"
 LABEL org.opencontainers.image.authors="GOV.UK Platform Engineering"
