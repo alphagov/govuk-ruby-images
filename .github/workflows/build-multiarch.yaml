@@ -16,6 +16,11 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '**.Dockerfile'
+      - 'build-matrix.json'
+      - '*.sh'
+      - '.github/workflows/build-multiarch.yaml'
   schedule:
     - cron: "34 3 * * *"
 
@@ -174,7 +179,7 @@ jobs:
           overwrite: true
 
   combine_manifests:
-    if: ${{ inputs.pushToRegistry || true }}
+    if: ${{ inputs.pushToRegistry != false }}
     name: Combine Docker Manifests for Ruby ${{ join(matrix.version.rubyver, '.') }} Images
     needs:
       - configure_builds
@@ -278,8 +283,10 @@ jobs:
           docker buildx imagetools inspect ${{ env.REGISTRY_BASE }}/govuk-ruby-builder:${{ steps.builder-image-metadata.outputs.version }}
 
   retire_old_images:
-    if: ${{ inputs.pushToRegistry || true }}
+    if: ${{ inputs.pushToRegistry != false }}
     name: Retire Old Images from GHCR
+    needs:
+      - combine_manifests
     permissions:
       packages: write
     uses: ./.github/workflows/gc.yaml
