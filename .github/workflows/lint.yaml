@@ -1,5 +1,9 @@
 name: Run linters/fixers
 on: [push]
+
+permissions:
+  contents: read
+
 jobs:
   shellcheck:
     name: Shellcheck
