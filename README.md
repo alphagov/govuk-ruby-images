@@ -91,10 +91,10 @@ assume they can write to `Path.join(Rails.root, 'tmp')` so that we can run with
 ### Build failures with "429 Too Many Requests" or rate limiting errors
 
 If you see registry rate limiting errors during builds, this is typically due to
-pulling base images from public registries. The build workflow uses Docker Hub's
-official Ubuntu images which have generous rate limits for parallel builds. If rate
-limiting persists, the base image can be mirrored to GHCR to eliminate external
-dependencies.
+pulling base images from public registries. The build workflow authenticates to DockerHub using 
+[governmentdigitalservice](https://hub.docker.com/u/governmentdigitalservice) and uses DockerHub's 
+official Ubuntu images which have generous rate limits for parallel builds. If rate limiting persists, 
+the base image can be mirrored to GHCR to eliminate external dependencies.
 
 ## Maintenance
 
