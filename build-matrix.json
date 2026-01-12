@@ -19,13 +19,6 @@
                 "3", "4", "8"
             ],
             "checksum": "53c4ddad41fbb6189f1f5ee0db57a51d54bd1f87f8755b3d68604156a35b045b",
-            "extra": ""
-        },
-          {
-            "rubyver": [
-                "4", "0", "0"
-            ],
-            "checksum": "2e8389c8c072cb658c93a1372732d9eac84082c88b065750db1e52a5ac630271",
             "extra": "latest"
         }
     ],
