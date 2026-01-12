@@ -9,16 +9,23 @@
         },
         {
             "rubyver": [
-                "3", "3", "9"
+                "3", "3", "10"
             ],
-            "checksum": "d1991690a4e17233ec6b3c7844c1e1245c0adce3e00d713551d0458467b727b1",
+            "checksum": "b555baa467a306cfc8e6c6ed24d0d27b27e9a1bed1d91d95509859eac6b0e928",
             "extra": ""
         },
         {
             "rubyver": [
-                "3", "4", "5"
+                "3", "4", "8"
             ],
-            "checksum": "1d88d8a27b442fdde4aa06dc99e86b0bbf0b288963d8433112dd5fac798fd5ee",
+            "checksum": "53c4ddad41fbb6189f1f5ee0db57a51d54bd1f87f8755b3d68604156a35b045b",
+            "extra": ""
+        },
+          {
+            "rubyver": [
+                "4", "0", "0"
+            ],
+            "checksum": "2e8389c8c072cb658c93a1372732d9eac84082c88b065750db1e52a5ac630271",
             "extra": "latest"
         }
     ],
