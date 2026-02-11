@@ -44,6 +44,8 @@ jobs:
         with:
           show-progress: false
 
+      # Use the docker driver so the locally-built base image is available in
+      # the Docker daemon for the builder image build step.
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
         with:
           driver: docker
