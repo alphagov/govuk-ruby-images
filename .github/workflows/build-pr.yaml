@@ -1,0 +1,74 @@
+name: Build images (PR)
+
+on:
+  pull_request:
+    paths:
+      - "**.Dockerfile"
+      - "build-matrix.json"
+      - "*.sh"
+      - ".github/workflows/build-pr.yaml"
+
+jobs:
+  configure_builds:
+    name: Read configuration from build-matrix.json
+    runs-on: ubuntu-latest
+    outputs:
+      matrix_versions: ${{ steps.set-matrix.outputs.matrix_versions }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          show-progress: false
+      - id: set-matrix
+        run: |
+          echo "matrix_versions=$(jq -c .version < build-matrix.json)" >> "$GITHUB_OUTPUT"
+
+  build_images:
+    name: Build ruby_${{ join(matrix.version.rubyver, '.') }} images
+    needs: configure_builds
+    strategy:
+      matrix:
+        version: ${{ fromJson(needs.configure_builds.outputs.matrix_versions) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Login to DockerHub
+        continue-on-error: true
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          show-progress: false
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        with:
+          driver: docker
+
+      - name: Build base image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          file: base.Dockerfile
+          context: .
+          push: false
+          provenance: false
+          build-args: |
+            RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
+            RUBY_CHECKSUM=${{ matrix.version.checksum }}
+          tags: govuk-ruby-base:${{ join(matrix.version.rubyver, '.') }}
+
+      - name: Build builder image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          file: builder.Dockerfile
+          context: .
+          push: false
+          provenance: false
+          build-contexts: |
+            ghcr.io/alphagov/govuk-ruby-base=docker-image://govuk-ruby-base:${{ join(matrix.version.rubyver, '.') }}
+          tags: govuk-ruby-builder:${{ join(matrix.version.rubyver, '.') }}
+
