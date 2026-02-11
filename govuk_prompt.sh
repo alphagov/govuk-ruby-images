@@ -5,7 +5,7 @@
 
 # Check if we are in an interactive bash shell
 if [ -n "$BASH_VERSION" ]; then
-  case "${GOVUK_ENVIRONMENT}" in
+  case "${GOVUK_ENVIRONMENT:-}" in
     "production")
       # Red for production
       COLOUR="\[\033[0;31m\]"
@@ -29,5 +29,5 @@ if [ -n "$BASH_VERSION" ]; then
 
   # Export the new prompt setting
   # Format: [environment] user@hostname:working_directory$
-  export PS1="${COLOUR}[${GOVUK_ENVIRONMENT}]${NO_COLOUR} \u@\h:\w\$ "
+  export PS1="${COLOUR}[${GOVUK_ENVIRONMENT:-}]${NO_COLOUR} \u@\h:\w\$ "
 fi
