@@ -76,6 +76,10 @@ jobs:
           ref: ${{ inputs.gitRef || github.ref }}
           show-progress: false
 
+      - uses: docker/setup-docker-action@e43656e248c0bd0647d3f5c195d116aacf6fcaf4 # v4.7.0
+        with:
+          version: "version=28.5.2"
+
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Calculate Image Tags
@@ -135,13 +139,15 @@ jobs:
             org.opencontainers.image.vendor=GDS
 
       - id: build-base-image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           file: base.Dockerfile
           context: .
           platforms: "linux/${{ matrix.runs_on.arch }}"
           load: true
+          push: true
           provenance: false
+          sbom: false
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
@@ -152,7 +158,7 @@ jobs:
           cache-to: type=gha,scope=build-base-${{ matrix.version.rubyver }}-${{ matrix.runs_on.arch }},mode=max
 
       - id: build-builder-image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           file: builder.Dockerfile
           context: .
@@ -160,6 +166,7 @@ jobs:
           platforms: "linux/${{ matrix.runs_on.arch }}"
           load: true
           provenance: false
+          sbom: false
           build-args: |
             BASE_IMAGE_DIGEST=${{steps.build-base-image.outputs.digest }}
             OWNER=${{ github.repository_owner }}
