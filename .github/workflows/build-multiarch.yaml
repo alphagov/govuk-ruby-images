@@ -143,6 +143,7 @@ jobs:
           load: true
           push: true
           provenance: false
+          sbom: false
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
             RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
@@ -161,6 +162,7 @@ jobs:
           platforms: "linux/${{ matrix.runs_on.arch }}"
           load: true
           provenance: false
+          sbom: false
           build-args: |
             BASE_IMAGE_DIGEST=${{steps.build-base-image.outputs.digest }}
             OWNER=${{ github.repository_owner }}
