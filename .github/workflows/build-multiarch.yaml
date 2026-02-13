@@ -141,6 +141,7 @@ jobs:
           context: .
           platforms: "linux/${{ matrix.runs_on.arch }}"
           load: true
+          push: true
           provenance: false
           build-args: |
             RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
