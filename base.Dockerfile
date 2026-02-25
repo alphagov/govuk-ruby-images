@@ -45,6 +45,7 @@ RUN set -x; \
     ./configure \
       --build="${arch}" --host="${arch}" --target="${arch}" \
       --sysconfdir=/etc \
+      --with-ruby-version=minor \
       --mandir=/tmp/throwaway \
       --disable-install-doc \
       --enable-shared \
