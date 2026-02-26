@@ -296,15 +296,6 @@ jobs:
           docker buildx imagetools inspect ${{ env.REGISTRY_BASE }}/govuk-ruby-base:${{ steps.base-image-metadata.outputs.version }}
           docker buildx imagetools inspect ${{ env.REGISTRY_BASE }}/govuk-ruby-builder:${{ steps.builder-image-metadata.outputs.version }}
 
-  retire_old_images:
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.pushToRegistry != false }}
-    name: Retire Old Images from GHCR
-    needs:
-      - combine_manifests
-    permissions:
-      packages: write
-    uses: ./.github/workflows/gc.yaml
-
   notify_failure:
     name: Notify Slack on Build Failure
     if: ${{ failure() }}
@@ -312,7 +303,6 @@ jobs:
       - configure_builds
       - build_and_push_image
       - combine_manifests
-      - retire_old_images
     runs-on: ubuntu-latest
     permissions: {}
     steps:
