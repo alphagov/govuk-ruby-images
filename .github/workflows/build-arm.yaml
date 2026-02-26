@@ -171,7 +171,7 @@ jobs:
           provenance: true
           sbom: true
           build-args: |
-            BASE_IMAGE_DIGEST=${{steps.build-base-image.outputs.digest }}
+            BASE_IMAGE_DIGEST=${{steps.build-push-base-image.outputs.digest }}
             OWNER=${{ github.repository_owner }}
           labels: ${{ steps.builder-image-metadata.outputs.labels }}
           tags: ${{ steps.builder-image-metadata.outputs.tags }}
