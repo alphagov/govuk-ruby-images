@@ -39,13 +39,6 @@ jobs:
           - govuk-ruby-builder
     steps:
       - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
-        name: GC untagged images except 20 most recent
-        with:
-          package-name: ${{ matrix.pkg }}
-          package-type: container
-          min-versions-to-keep: 20  # Mostly for attestations (.att).
-          delete-only-untagged-versions: 'true'
-      - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
         name: GC tagged images for no-longer-supported tags
         with:
           package-name: ${{ matrix.pkg }}
