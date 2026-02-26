@@ -1,0 +1,250 @@
+name: Build and push ARM64 Images to GHCR
+
+on:
+  workflow_dispatch:
+    inputs:
+      gitRef:
+        description: Commit, tag or branch name to deploy
+        required: true
+        type: string
+        default: main
+      pushToRegistry:
+        description: Push to image registry. Set to false to build without pushing.
+        required: true
+        type: boolean
+        default: true
+  push:
+    branches:
+      - main
+    paths:
+      - "**.Dockerfile"
+      - "build-matrix.json"
+      - "*.sh"
+      - ".github/workflows/build-multiarch.yaml"
+  schedule:
+    - cron: "34 3 * * *"
+
+env:
+  REGISTRY_BASE: ghcr.io/alphagov
+
+jobs:
+  configure_builds:
+    name: Read configuration from build-matrix.json
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix_versions: ${{ steps.set-matrix.outputs.matrix_versions }}
+      supported_tags_regex: ${{ steps.set-matrix.outputs.supported_tags_regex }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          show-progress: false
+      - id: set-matrix
+        run: |
+          {
+            echo "matrix=$(jq -c . < build-matrix.json)"
+            echo "matrix_versions=$(jq -c .version < build-matrix.json)"
+            echo "runs_on=$(jq -c .runs_on < build-matrix.json)"
+          } >> "$GITHUB_OUTPUT"
+
+  build_and_push_image:
+    name: Build ruby_${{ join(matrix.version.rubyver, '.') }} for ${{ matrix.runs_on.arch }} and push to GHCR
+    needs: configure_builds
+    strategy:
+      matrix: ${{ fromJson(needs.configure_builds.outputs.matrix) }}
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      packages: write
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to DockerHub
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.gitRef || github.ref }}
+          show-progress: false
+
+      - uses: docker/setup-docker-action@e43656e248c0bd0647d3f5c195d116aacf6fcaf4 # v4.7.0
+        with:
+          version: "version=28.5.2"
+
+      - name: Set up Docker BuildX w/ ARM64
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        with:
+          platforms: linux/arm64
+
+      - name: Calculate Image Tags
+        id: calculate-image-tags
+        run: |
+          CREATED_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "createdDate=${CREATED_DATE}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Base Image Metadata
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
+        id: base-image-metadata
+        with:
+          flavor: |
+            latest=false
+          images: |
+            ${{ env.REGISTRY_BASE }}/govuk-ruby-base
+          tags: |
+            type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            type=raw,value=${{ join(matrix.version.rubyver, '.') }}
+            type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
+            type=sha,enable=true,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-,format=short
+            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-
+            type=sha,enable=true,priority=200,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
+          labels: |
+            org.opencontainers.image.title=govuk-ruby-base
+            org.opencontainers.image.authors="GOV.UK Platform Engineering"
+            org.opencontainers.image.description="Base image for GOV.UK Ruby apps"
+            org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
+            org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
+            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
+            org.opencontainers.image.vendor=GDS
+
+      - name: Generate Builder Image Metadata
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
+        id: builder-image-metadata
+        with:
+          flavor: |
+            latest=false
+          images: |
+            ${{ env.REGISTRY_BASE }}/govuk-ruby-builder
+          tags: |
+            type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            type=raw,value=${{ join(matrix.version.rubyver, '.') }}
+            type=raw,value=latest,enable=${{ matrix.version.extra == 'latest' }}
+            type=sha,enable=true,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-,format=short
+            type=sha,enable=true,prefix=${{ join(matrix.version.rubyver, '.') }}-,format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}-
+            type=sha,enable=true,priority=200,format=long,prefix=${{ join(matrix.version.rubyver, '.') }}-
+          labels: |
+            org.opencontainers.image.title=govuk-ruby-builder
+            org.opencontainers.image.authors="GOV.UK Platform Engineering"
+            org.opencontainers.image.description="Builder Image for GOV.UK Ruby-based Apps"
+            org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
+            org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
+            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
+            org.opencontainers.image.vendor=GDS
+
+      - name: Build and Push Base Image
+        id: build-push-base-image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          file: base.Dockerfile
+          context: .
+          platforms: "linux/arm64"
+          push: ${{ inputs.pushToRegistry == true }}
+          provenance: true
+          sbom: true
+          build-args: |
+            RUBY_MAJOR=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
+            RUBY_VERSION=${{ join(matrix.version.rubyver, '.') }}
+            RUBY_CHECKSUM=${{ matrix.version.checksum }}
+          labels: ${{ steps.base-image-metadata.outputs.labels }}
+          tags: ${{ steps.base-image-metadata.outputs.tags }}
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-base,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=build-base-${{ matrix.version.rubyver }}-arm64
+          cache-to: type=gha,scope=build-base-${{ matrix.version.rubyver }}-arm64,mode=max
+
+      - name: Build and Push Builder Image
+        id: build-push-builder-image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          file: builder.Dockerfile
+          context: .
+          push: ${{ inputs.pushToRegistry == true }}
+          platforms: "linux/arm64"
+          provenance: true
+          sbom: true
+          build-args: |
+            BASE_IMAGE_DIGEST=${{steps.build-base-image.outputs.digest }}
+            OWNER=${{ github.repository_owner }}
+          labels: ${{ steps.builder-image-metadata.outputs.labels }}
+          tags: ${{ steps.builder-image-metadata.outputs.tags }}
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-builder,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=build-builder-${{ matrix.version.rubyver }}-arm64
+          cache-to: type=gha,scope=build-builder-${{ matrix.version.rubyver }}-arm64,mode=max
+
+  retire_old_images:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.pushToRegistry != false }}
+    name: Retire Old Images from GHCR
+    needs:
+      - build_and_push_image
+    permissions:
+      packages: write
+    uses: ./.github/workflows/gc.yaml
+
+  notify_failure:
+    name: Notify Slack on Build Failure
+    if: ${{ failure() }}
+    needs:
+      - configure_builds
+      - build_and_push_image
+      - retire_old_images
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Get timestamp
+        id: timestamp
+        run: echo "time=$(date -u +"%a, %d %b %Y %H:%M:%S UTC")" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook: ${{ secrets.GOVUK_PLATFORM_SUPPORT_SLACK_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚨 Build and push multi-arch images FAILED"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Run:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow Run>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n<${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Timestamp:*\n${{ steps.timestamp.outputs.time }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Triggered by:*\n${{ github.event_name }}"
+                    }
+                  ]
+                }
+              ]
+            }
