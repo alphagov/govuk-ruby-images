@@ -311,7 +311,7 @@ jobs:
         run: echo "time=$(date -u +"%a, %d %b %Y %H:%M:%S UTC")" >> "$GITHUB_OUTPUT"
 
       - name: Notify Slack
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ secrets.GOVUK_PLATFORM_SUPPORT_SLACK_WEBHOOK_URL }}
           webhook-type: webhook-trigger
