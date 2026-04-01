@@ -52,7 +52,7 @@ RUN set -x; \
     ; \
     make; \
     make install; \
-    gem update --system '3.7.2' --silent --no-document; \
+    gem update --system --silent --no-document; \
     gem pristine --extensions; \
     gem cleanup;
 
