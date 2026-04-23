@@ -1,0 +1,210 @@
+name: Build arm image for release
+
+on:
+  workflow_dispatch:
+    inputs:
+      gitRef:
+        description: 'Commit, tag or branch name to deploy'
+        required: true
+        type: string
+  pull_request:
+
+env:
+  REGISTRY_OWNER: alphagov
+  REGISTRY_BASE: localhost:5000
+
+jobs:
+  build_image:
+    name: Build Ruby 4.x for arm64
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    services:
+      registry:
+        image: registry:3
+        ports:
+          - 5000:5000
+    steps:
+      - name: Checkout govuk-ruby-images repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.gitRef || github.ref }}
+          path: govuk-ruby-images
+          show-progress: false
+
+      - name: Set Ruby version
+        id: set-ruby-version
+        run: |
+          filtered_build_matrix=$(jq '[.version[] | select(.rubyver[0] | startswith("4")) | {rubyver, checksum}] | last' -c < govuk-ruby-images/build-matrix.json)
+          echo "ruby_config=$(echo "${filtered_build_matrix}")" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Setup Docker
+        uses: docker/setup-docker-action@1a6edb0ba9ac496f6850236981f15d8f9a82254d # v5.0.0
+        with:
+          version: "version=28.5.2"
+
+      - name: Setup Docker buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+        with:
+          driver-opts: network=host
+
+      - name: Output the created date
+        id: calculate-created-date
+        run: |
+          CREATED_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "createdDate=${CREATED_DATE}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Base Image Metadata
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
+        id: base-image-metadata
+        with:
+          flavor: |
+            latest=false
+          images: |
+            ${{ env.REGISTRY_BASE }}/${{ env.REGISTRY_OWNER }}/govuk-ruby-base
+          tags: |
+            type=raw,value=${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[0] }}.${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[1] }}
+            type=raw,value=${{ join(fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver, '.') }}
+            type=sha,enable=true,prefix=${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[0] }}.${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[1] }}-,format=short
+            type=sha,enable=true,prefix=${{ join(fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver, '.') }}-,format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[0] }}.${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[1] }}-
+            type=sha,enable=true,priority=200,format=long,prefix=${{ join(fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver, '.') }}-
+          labels: |
+            org.opencontainers.image.title=govuk-ruby-base
+            org.opencontainers.image.authors="GOV.UK Platform Engineering"
+            org.opencontainers.image.description="Base image for GOV.UK Ruby apps"
+            org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
+            org.opencontainers.image.version=${{ join(fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver, '.') }}
+            org.opencontainers.image.created=${{ steps.calculate-created-date.outputs.createdDate }}
+            org.opencontainers.image.vendor=GDS
+
+      - name: Generate Builder Image Metadata
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
+        id: builder-image-metadata
+        with:
+          flavor: |
+            latest=false
+          images: |
+            ${{ env.REGISTRY_BASE }}/${{ env.REGISTRY_OWNER }}/govuk-ruby-builder
+          tags: |
+            type=raw,value=${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[0] }}.${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[1] }}
+            type=raw,value=${{ join(fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver, '.') }}
+            type=sha,enable=true,prefix=${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[0] }}.${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[1] }}-,format=short
+            type=sha,enable=true,prefix=${{ join(fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver, '.') }}-,format=short
+            type=sha,enable=true,priority=100,format=long,prefix=${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[0] }}.${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[1] }}-
+            type=sha,enable=true,priority=200,format=long,prefix=${{ join(fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver, '.') }}-
+          labels: |
+            org.opencontainers.image.title=govuk-ruby-builder
+            org.opencontainers.image.authors="GOV.UK Platform Engineering"
+            org.opencontainers.image.description="Builder Image for GOV.UK Ruby-based Apps"
+            org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
+            org.opencontainers.image.version=${{ join(fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver, '.') }}
+            org.opencontainers.image.created=${{ steps.calculate-created-date.outputs.createdDate }}
+            org.opencontainers.image.vendor=GDS
+
+      - name: Build Base Image
+        id: build-base-image
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          file: govuk-ruby-images/base.Dockerfile
+          context: govuk-ruby-images
+          platforms: "linux/arm64"
+          load: true
+          push: true
+          provenance: false
+          sbom: false
+          build-args: |
+            RUBY_MAJOR=${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[0] }}.${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[1] }}
+            RUBY_VERSION=${{ join(fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver, '.') }}
+            RUBY_CHECKSUM=${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).checksum }}
+          labels: ${{ steps.base-image-metadata.outputs.labels }}
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/${{ env.REGISTRY_OWNER }}/govuk-ruby-base,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=build-base-${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver }}-arm64
+          cache-to: type=gha,scope=build-base-${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver }}-arm64,mode=max
+
+      - name: Build Builder Image
+        id: build-builder-image
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          file: govuk-ruby-images/builder.Dockerfile
+          context: govuk-ruby-images
+          push: true
+          platforms: "linux/arm64"
+          load: true
+          provenance: false
+          sbom: false
+          build-args: |
+            REPOSITORY=${{ env.REGISTRY_BASE }}
+            BASE_IMAGE_DIGEST=${{steps.build-base-image.outputs.digest }}
+            OWNER=${{ github.repository_owner }}
+          labels: ${{ steps.builder-image-metadata.outputs.labels }}
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/${{ env.REGISTRY_OWNER }}/govuk-ruby-builder,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=build-builder-${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver }}-arm64
+          cache-to: type=gha,scope=build-builder-${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver }}-arm64,mode=max
+
+      - name: Build Base Image with tags
+        id: build-base-image-with-tags
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          file: govuk-ruby-images/base.Dockerfile
+          context: govuk-ruby-images
+          platforms: "linux/arm64"
+          load: true
+          push: true
+          provenance: false
+          sbom: false
+          build-args: |
+            RUBY_MAJOR=${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[0] }}.${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[1] }}
+            RUBY_VERSION=${{ join(fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver, '.') }}
+            RUBY_CHECKSUM=${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).checksum }}
+          tags: ${{ steps.base-image-metadata.outputs.tags }}
+          labels: ${{ steps.base-image-metadata.outputs.labels }}
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/${{ env.REGISTRY_OWNER }}/govuk-ruby-base,push=true
+          cache-from: type=gha,scope=build-base-${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver }}-arm64
+          cache-to: type=gha,scope=build-base-${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver }}-arm64,mode=max
+
+      - name: Build Builder Image with tags
+        id: build-builder-image-with-tags
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          file: govuk-ruby-images/builder.Dockerfile
+          context: govuk-ruby-images
+          push: true
+          platforms: "linux/arm64"
+          load: true
+          provenance: false
+          sbom: false
+          build-args: |
+            REPOSITORY=${{ env.REGISTRY_BASE }}
+            BASE_IMAGE_DIGEST=${{steps.build-base-image.outputs.digest }}
+            OWNER=${{ github.repository_owner }}
+          tags: ${{ steps.builder-image-metadata.outputs.tags }}
+          labels: ${{ steps.builder-image-metadata.outputs.labels }}
+          outputs: type=image,name=${{ env.REGISTRY_BASE }}/${{ env.REGISTRY_OWNER }}/govuk-ruby-builder,push=true
+          cache-from: type=gha,scope=build-builder-${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver }}-arm64
+          cache-to: type=gha,scope=build-builder-${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver }}-arm64,mode=max
+
+      - name: Checkout release repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: alphagov/release
+          ref: main
+          path: release
+          show-progress: false
+
+      - name: Build arm release image
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
+        with:
+          file: release/Dockerfile
+          context: release
+          platforms: "linux/arm64"
+          build-args: |
+            base_image=${{ env.REGISTRY_BASE }}/${{ env.REGISTRY_OWNER }}/govuk-ruby-base:${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[0] }}.${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[1] }}
+            builder_image=${{ env.REGISTRY_BASE }}/${{ env.REGISTRY_OWNER }}/govuk-ruby-builder:${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[0] }}.${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver[1] }}
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
