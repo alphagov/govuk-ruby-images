@@ -1,0 +1,15 @@
+name: Build arm image for release
+
+on:
+  pull_request:
+
+jobs:
+  build_release_image:
+    name: Build release on Ruby 4.x arm images
+    uses: alphagov/govuk-ruby-images/.github/workflows/build-app.yaml@main
+    with:
+      gitRef: ${{ github.head_ref }}
+      appName: release
+      rubyVersion: 4
+    permissions:
+      contents: read

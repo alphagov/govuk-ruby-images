@@ -1,0 +1,15 @@
+name: Build arm image for govuk-replatform-test-app
+
+on:
+  pull_request:
+
+jobs:
+  build_govuk-replatform-test-app_image:
+    name: Build govuk-replatform-test-app on Ruby 3.x arm images
+    uses: alphagov/govuk-ruby-images/.github/workflows/build-app.yaml@main
+    with:
+      gitRef: ${{ github.head_ref }}
+      appName: govuk-replatform-test-app
+      rubyVersion: 3
+    permissions:
+      contents: read
