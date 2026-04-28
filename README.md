@@ -106,6 +106,9 @@ The `checksum` field is currently the SHA-256 hash of the Ruby source tarball. W
 
 See [Ruby Releases](https://www.ruby-lang.org/en/downloads/releases/) for the list of available Ruby tarballs and their SHA digests.
 
+Ensure that [release](https://github.com/alphagov/release/) is at the latest major version of Ruby.
+Ensure that [govuk-replatform-test-app](https://github.com/alphagov/govuk-replatform-test-app/) is at the penultimate major version of Ruby.
+
 ### Build workflow maintenance
 
 The build workflow (`.github/workflows/build-multiarch.yaml`) includes several features to ensure reliable image builds:
@@ -115,6 +118,9 @@ The build workflow (`.github/workflows/build-multiarch.yaml`) includes several f
 - **Failure notifications**: Failed builds automatically notify `#govuk-platform-support` via Slack
 - **Manual control**: Workflow can be dispatched manually with option to skip registry push for testing
 - **Multi-architecture**: Builds images for multiple Ruby versions across amd64 and arm64 architectures in parallel
+
+The build app workflow (`.github/workflows/build-app.yaml`) ensures that changes to `base.Dockerfile` and `builder.Dockerfile` are 
+tested against `release` (Ruby 4.x) and `govuk-replatform-test-app` (Ruby 3.3.x) to ensure this doesn't break the CI/CD pipeline.
 
 ### Slack notifications
 
