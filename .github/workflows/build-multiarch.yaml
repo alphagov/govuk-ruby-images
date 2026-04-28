@@ -82,8 +82,8 @@ jobs:
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
-      - name: Calculate Image Tags
-        id: calculate-image-tags
+      - name: Output the created date
+        id: calculate-created-date
         run: |
           CREATED_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           echo "createdDate=${CREATED_DATE}" >> "$GITHUB_OUTPUT"
@@ -110,7 +110,7 @@ jobs:
             org.opencontainers.image.description="Base image for GOV.UK Ruby apps"
             org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
-            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
+            org.opencontainers.image.created=${{ steps.calculate-created-date.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
 
       - name: Generate Builder Image Metadata
@@ -135,7 +135,7 @@ jobs:
             org.opencontainers.image.description="Builder Image for GOV.UK Ruby-based Apps"
             org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
-            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
+            org.opencontainers.image.created=${{ steps.calculate-created-date.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
 
       - id: build-base-image
@@ -214,8 +214,8 @@ jobs:
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
-      - name: Calculate Image Tags
-        id: calculate-image-tags
+      - name: Output the created date
+        id: calculate-created-date
         run: |
           CREATED_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           echo "createdDate=${CREATED_DATE}" >> "$GITHUB_OUTPUT"
@@ -241,7 +241,7 @@ jobs:
             org.opencontainers.image.description="Base image for GOV.UK Ruby apps"
             org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
-            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
+            org.opencontainers.image.created=${{ steps.calculate-created-date.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
           tags: |
             type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
@@ -273,7 +273,7 @@ jobs:
             org.opencontainers.image.description="Builder Image for GOV.UK Ruby-based Apps"
             org.opencontainers.image.source="https://github.com/alphagov/govuk-ruby-images"
             org.opencontainers.image.version=${{ join(matrix.version.rubyver, '.') }}
-            org.opencontainers.image.created=${{ steps.calculate-image-tags.outputs.createdDate }}
+            org.opencontainers.image.created=${{ steps.calculate-created-date.outputs.createdDate }}
             org.opencontainers.image.vendor=GDS
           tags: |
             type=raw,value=${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
