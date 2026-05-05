@@ -38,8 +38,10 @@ jobs:
 
       - name: Set Ruby version
         id: set-ruby-version
+        env:
+          RUBY_VERSION: ${{ inputs.rubyVersion }}
         run: |
-          filtered_build_matrix=$(jq '[.version[] | select(.rubyver[0] | startswith($rev)) | {rubyver, checksum}] | last' --arg rev "${{ inputs.rubyVersion }}" -c < govuk-ruby-images/build-matrix.json)
+          filtered_build_matrix=$(jq '[.version[] | select(.rubyver[0] | startswith($rev)) | {rubyver, checksum}] | last' --arg rev "$RUBY_VERSION" -c < govuk-ruby-images/build-matrix.json)
           echo "ruby_config=${filtered_build_matrix}" >> "$GITHUB_OUTPUT"
 
       - name: Setup Docker
