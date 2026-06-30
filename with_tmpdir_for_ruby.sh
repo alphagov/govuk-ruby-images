@@ -1,7 +1,14 @@
 #!/bin/dash
+
+# This wrapper script is an attempt to work around Ruby's outdated assertion about /tmp permissions so we can keep the security
+# benefit of readOnlyRootFileSystem
 #
-# Create a subdirectory inside $TMPDIR (or /tmp if not set) and run a command
-# with TMPDIR set to the new subdirectory.
+# We want to set readOnlyRootFileSystem as well as to read/write to /tmp. To enable this we mount an
+# emptyDir volume on /tmp with read/write permissions. However Ruby is fussy about the permission bits on the /tmp directory
+# (see https://github.com/ruby/ruby/blob/v2_7_6/lib/tmpdir.rb#L27).
+#
+# Since it is difficult to work around the check whilst keeping the emptyDir read/write permissions on /tmp we
+# create a subdirectory inside $TMPDIR (or /tmp if not set) and run a command with TMPDIR set to the new subdirectory.
 #
 # This script can be invoked in two ways:
 #
@@ -11,21 +18,6 @@
 #
 # 2) as the name of the command to run, in which case all positional arguments
 # are passed through.
-#
-# The purpose is to work around a check in the Ruby standard library
-# which would otherwise prevent using Kubernetes readOnlyRootFilesystem with an
-# emptyDir volume mounted read-write on /tmp. See
-# https://github.com/ruby/ruby/blob/v2_7_6/lib/tmpdir.rb#L27
-#
-# Ruby is fussy about the mode bits on the temp directory in a way that's
-# challenging to work around neatly in Kubernetes. The Ruby maintainers' intent
-# was clearly to mitigate tempfile vulnerabilities on multiuser servers, but
-# those are not applicable to a container-per-process model.
-#
-# This wrapper script is an attempt to work around Ruby's outdated assertion
-# about /tmp permissions so that we can keep the security benefit of
-# readOnlyRootFilesystem without having to maintain patches against each
-# supported version of Ruby.
 #
 
 set -eu
