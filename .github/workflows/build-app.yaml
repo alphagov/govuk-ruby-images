@@ -30,7 +30,7 @@ jobs:
           - 5000:5000
     steps:
       - name: Checkout govuk-ruby-images repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.gitRef }}
           path: govuk-ruby-images
@@ -191,7 +191,7 @@ jobs:
           cache-to: type=gha,scope=build-builder-${{ fromJSON(steps.set-ruby-version.outputs.ruby_config).rubyver }}-arm64,mode=max
 
       - name: Checkout ${{ inputs.appName }} repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: alphagov/${{ inputs.appName }}
           ref: main
