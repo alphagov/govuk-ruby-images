@@ -13,16 +13,16 @@ on:
         required: true
         type: boolean
         default: true
-  push:
-    branches:
-      - main
-    paths:
-      - "**.Dockerfile"
-      - "build-matrix.json"
-      - "*.sh"
-      - ".github/workflows/build-multiarch.yaml"
-  schedule:
-    - cron: "34 3 * * *"
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - "**.Dockerfile"
+  #     - "build-matrix.json"
+  #     - "*.sh"
+  #     - ".github/workflows/build-multiarch.yaml"
+  # schedule:
+  #   - cron: "34 3 * * *"
 
 env:
   REGISTRY_BASE: ghcr.io/alphagov
