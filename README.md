@@ -23,7 +23,7 @@ Use the two images in your app's Dockerfile.
 Specify the image tag that corresponds to the `<major>.<minor>` Ruby version that your application needs.
 
 ```dockerfile
-ARG ruby_version=3.3
+ARG ruby_version=4.0
 ARG base_image=ghcr.io/alphagov/govuk-ruby-base:$ruby_version
 ARG builder_image=ghcr.io/alphagov/govuk-ruby-builder:$ruby_version
 
@@ -111,13 +111,14 @@ Ensure that [govuk-replatform-test-app](https://github.com/alphagov/govuk-replat
 
 ### Build workflow maintenance
 
-The build workflow (`.github/workflows/build-multiarch.yaml`) includes several features to ensure reliable image builds:
+The ARM image build workflow (`.github/workflows/build-push-arm-image.yml`), triggered by `.github/workflows/build-multiarch.yaml`, includes several features to ensure reliable image builds:
 
-- **Dependency chain**: Manifest combination and garbage collection only run after successful builds, preventing deletion of working images when new builds fail
+- **Native ARM builds**: Images are built on GitHub ARM runners, so no manifest-combining job is needed
+- **Docker 29**: Builds use a current Docker engine and Buildx setup
 - **Path filtering**: Builds are skipped when only non-Docker files change (e.g., documentation updates), reducing unnecessary CI/CD resource usage
 - **Failure notifications**: Failed builds automatically notify `#govuk-platform-support` via Slack
-- **Manual control**: Workflow can be dispatched manually with option to skip registry push for testing
-- **Multi-architecture**: Builds images for multiple Ruby versions across amd64 and arm64 architectures in parallel
+- **Manual triggering**: Workflow can still be dispatched manually for a chosen ref
+- **Supply chain metadata**: Builds publish provenance, SBOM attestations, and Cosign signatures
 
 The build app workflow (`.github/workflows/build-app.yaml`) ensures that changes to `base.Dockerfile` and `builder.Dockerfile` are 
 tested against `release` (Ruby 4.x) and `govuk-replatform-test-app` (Ruby 3.3.x) to ensure this doesn't break the CI/CD pipeline.
