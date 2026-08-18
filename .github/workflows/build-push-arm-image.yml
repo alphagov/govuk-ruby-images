@@ -56,7 +56,6 @@ concurrency:
 
 env:
   IMAGE_PLATFORM: linux/arm64
-  REGISTRY_BASE: ghcr.io/${{ github.repository_owner }}
 
 jobs:
   configure_builds:
@@ -90,8 +89,8 @@ jobs:
       PUSH_TO_REGISTRY: ${{ github.event_name != 'workflow_dispatch' || inputs.pushToRegistry }}
       RUBY_MAJOR: ${{ matrix.version.rubyver[0] }}.${{ matrix.version.rubyver[1] }}
       RUBY_VERSION: ${{ join(matrix.version.rubyver, '.') }}
-      BASE_IMAGE_NAME: ${{ env.REGISTRY_BASE }}/govuk-ruby-base
-      BUILDER_IMAGE_NAME: ${{ env.REGISTRY_BASE }}/govuk-ruby-builder
+      BASE_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/govuk-ruby-base
+      BUILDER_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/govuk-ruby-builder
     steps:
       - uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1 # v5.4.0
         with:
