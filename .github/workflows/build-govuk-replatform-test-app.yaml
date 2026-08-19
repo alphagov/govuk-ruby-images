@@ -6,7 +6,7 @@ on:
 jobs:
   build_govuk-replatform-test-app_image:
     name: Build govuk-replatform-test-app on Ruby 3.x arm images
-    uses: alphagov/govuk-ruby-images/.github/workflows/build-app.yaml@main
+    uses: ./.github/workflows/build-app.yaml
     with:
       gitRef: ${{ github.head_ref }}
       appName: govuk-replatform-test-app

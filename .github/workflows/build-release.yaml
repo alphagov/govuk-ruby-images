@@ -6,7 +6,7 @@ on:
 jobs:
   build_release_image:
     name: Build release on Ruby 4.x arm images
-    uses: alphagov/govuk-ruby-images/.github/workflows/build-app.yaml@main
+    uses: ./.github/workflows/build-app.yaml
     with:
       gitRef: ${{ github.head_ref }}
       appName: release
