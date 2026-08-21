@@ -13,16 +13,6 @@ on:
         required: true
         type: boolean
         default: true
-  push:
-    branches:
-      - main
-    paths:
-      - "**.Dockerfile"
-      - "build-matrix.json"
-      - "*.sh"
-      - ".github/workflows/build-multiarch.yaml"
-  schedule:
-    - cron: "34 3 * * *"
 
 env:
   REGISTRY_BASE: ghcr.io/alphagov
@@ -31,6 +21,8 @@ jobs:
   configure_builds:
     name: Read configuration from build-matrix.json
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       matrix_versions: ${{ steps.set-matrix.outputs.matrix_versions }}
@@ -55,6 +47,7 @@ jobs:
       matrix: ${{ fromJson(needs.configure_builds.outputs.matrix) }}
     runs-on: ${{ matrix.runs_on.runner_type }}
     permissions:
+      contents: read
       packages: write
     steps:
       - name: Login to GHCR
@@ -168,7 +161,7 @@ jobs:
           provenance: false
           sbom: false
           build-args: |
-            BASE_IMAGE_DIGEST=${{steps.build-base-image.outputs.digest }}
+            BASE_IMAGE_REF=${{ env.REGISTRY_BASE }}/govuk-ruby-base@${{ steps.build-base-image.outputs.digest }}
             OWNER=${{ github.repository_owner }}
           labels: ${{ steps.builder-image-metadata.outputs.labels }}
           outputs: type=image,name=${{ env.REGISTRY_BASE }}/govuk-ruby-builder,push-by-digest=true,name-canonical=true,push=true
