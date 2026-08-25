@@ -2,13 +2,14 @@ name: Sign container images
 
 on:
   workflow_run:
-    workflows: ["Build and push multi-arch images"]
+    workflows: ["Build and push ARM images"]
     types:
       - completed
   workflow_dispatch:
 
 jobs:
   sign:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     name: Create attestation
     runs-on: ubuntu-latest
     strategy:

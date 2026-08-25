@@ -140,8 +140,7 @@ jobs:
           provenance: false
           sbom: false
           build-args: |
-            REPOSITORY=${{ env.REGISTRY_BASE }}
-            BASE_IMAGE_DIGEST=${{steps.build-base-image.outputs.digest }}
+            BASE_IMAGE_REF=${{ env.REGISTRY_BASE }}/${{ env.REGISTRY_OWNER }}/govuk-ruby-base@${{ steps.build-base-image.outputs.digest }}
             OWNER=${{ github.repository_owner }}
           labels: ${{ steps.builder-image-metadata.outputs.labels }}
           outputs: type=image,name=${{ env.REGISTRY_BASE }}/${{ env.REGISTRY_OWNER }}/govuk-ruby-builder,push-by-digest=true,name-canonical=true,push=true
@@ -181,8 +180,7 @@ jobs:
           provenance: false
           sbom: false
           build-args: |
-            REPOSITORY=${{ env.REGISTRY_BASE }}
-            BASE_IMAGE_DIGEST=${{steps.build-base-image.outputs.digest }}
+            BASE_IMAGE_REF=${{ env.REGISTRY_BASE }}/${{ env.REGISTRY_OWNER }}/govuk-ruby-base@${{ steps.build-base-image.outputs.digest }}
             OWNER=${{ github.repository_owner }}
           tags: ${{ steps.builder-image-metadata.outputs.tags }}
           labels: ${{ steps.builder-image-metadata.outputs.labels }}

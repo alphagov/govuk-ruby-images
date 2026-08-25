@@ -1,7 +1,8 @@
-ARG REPOSITORY=ghcr.io
+ARG BASE_IMAGE_REF
 ARG OWNER=alphagov
-ARG BASE_IMAGE_DIGEST
-FROM ${REPOSITORY}/${OWNER}/govuk-ruby-base@${BASE_IMAGE_DIGEST}
+FROM ${BASE_IMAGE_REF}
+
+ARG OWNER
 
 RUN install_packages \
     g++ git gpg libc-dev libcurl4-openssl-dev libgdbm-dev libssl-dev \
