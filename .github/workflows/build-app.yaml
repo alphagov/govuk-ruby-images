@@ -110,7 +110,7 @@ jobs:
 
       - name: Build Base Image
         id: build-base-image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           file: govuk-ruby-images/base.Dockerfile
           context: govuk-ruby-images
@@ -130,7 +130,7 @@ jobs:
 
       - name: Build Builder Image
         id: build-builder-image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           file: govuk-ruby-images/builder.Dockerfile
           context: govuk-ruby-images
@@ -149,7 +149,7 @@ jobs:
 
       - name: Build Base Image with tags
         id: build-base-image-with-tags
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           file: govuk-ruby-images/base.Dockerfile
           context: govuk-ruby-images
@@ -170,7 +170,7 @@ jobs:
 
       - name: Build Builder Image with tags
         id: build-builder-image-with-tags
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           file: govuk-ruby-images/builder.Dockerfile
           context: govuk-ruby-images
@@ -197,7 +197,7 @@ jobs:
           show-progress: false
 
       - name: Build arm ${{ inputs.appName }} image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           file: ${{ inputs.appName }}/Dockerfile
           context: ${{ inputs.appName }}
