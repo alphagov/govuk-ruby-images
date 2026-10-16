@@ -91,9 +91,9 @@ assume they can write to `Path.join(Rails.root, 'tmp')` so that we can run with
 ### Build failures with "429 Too Many Requests" or rate limiting errors
 
 If you see registry rate limiting errors during builds, this is typically due to
-pulling base images from public registries. The build workflow authenticates to DockerHub using 
-[governmentdigitalservice](https://hub.docker.com/u/governmentdigitalservice) and uses DockerHub's 
-official Ubuntu images which have generous rate limits for parallel builds. If rate limiting persists, 
+pulling base images from public registries. The build workflow authenticates to DockerHub using
+[governmentdigitalservice](https://hub.docker.com/u/governmentdigitalservice) and uses DockerHub's
+official Ubuntu images which have generous rate limits for parallel builds. If rate limiting persists,
 the base image can be mirrored to GHCR to eliminate external dependencies.
 
 ## Maintenance
@@ -120,7 +120,7 @@ The ARM image build workflow (`.github/workflows/build-push-arm-image.yml`), tri
 - **Manual triggering**: Workflow can be dispatched manually for a chosen ref, with optional local-only builds that skip registry push
 - **Supply chain metadata**: Builds publish provenance, SBOM attestations, and Cosign signatures
 
-The build app workflow (`.github/workflows/build-app.yaml`) ensures that changes to `base.Dockerfile` and `builder.Dockerfile` are 
+The build app workflow (`.github/workflows/build-app.yaml`) ensures that changes to `base.Dockerfile` and `builder.Dockerfile` are
 tested against `release` (Ruby 4.x) and `govuk-replatform-test-app` (Ruby 3.3.x) to ensure this doesn't break the CI/CD pipeline.
 
 ### Slack notifications
@@ -137,4 +137,4 @@ Contact the [Platform Engineering team](#team) if you need assistance with Slack
 
 ### Team
 
-[GOV.UK Platform Engineering team](https://github.com/orgs/alphagov/teams/gov-uk-platform-engineering) looks after this repo. If you're inside GDS, you can find us in [#govuk-platform-engineering](https://gds.slack.com/channels/govuk-platform-engineering) or view our [project board](https://github.com/orgs/alphagov/projects/71).
+[GOV.UK Platform Engineering team](https://github.com/orgs/alphagov/teams/gov-uk-platform-engineering) looks after this repo. If you're inside GDS, you can find us in [#govuk-ask-platform-engineering](https://gds.slack.com/archives/C013F737737).
