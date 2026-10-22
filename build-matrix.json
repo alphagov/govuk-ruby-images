@@ -9,23 +9,23 @@
         },
         {
             "rubyver": [
-                "3", "3", "11"
+                "3", "3", "12"
             ],
-            "checksum": "59f0fafb1a59a05dc3765117af3fa68e153eb48254708549f321c1e9e078d7a0",
+            "checksum": "b06d63beae271933033e27f0a389bc582a009e7845357d44365c39de525a051b",
             "extra": ""
         },
         {
             "rubyver": [
-                "3", "4", "10"
+                "3", "4", "11"
             ],
-            "checksum": "ecee2d072a14f2d14347dd56dfd8fe5c3130abf5117bfaacbda0f4ef9cc429ec",
+            "checksum": "5c22be44524312b3d433d68739bcc530633b1da5ef8ba0afa0a37680da17d3de",
             "extra": ""
         },
         {
             "rubyver": [
-                "4", "0", "6"
+                "4", "0", "8"
             ],
-            "checksum": "837d299e8f7ddf2be31a229a7a7e019d354979825117989acb3b32b1a9be262a",
+            "checksum": "0968e2ac4cbd6f1fd85d3092aed66cd3c2d8ba4a5e2493d6e6c6cb0c431897d2",
             "extra": "latest"
         }
     ],
@@ -35,7 +35,7 @@
             "arch": "amd64"
         },
         {
-            "runner_type": "ubuntu-24.04-arm",
+            "runner_type": "ubuntu-26.04-arm",
             "arch": "arm64"
         }
     ]
