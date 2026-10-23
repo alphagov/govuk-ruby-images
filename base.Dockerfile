@@ -1,5 +1,4 @@
-FROM ubuntu:24.04 AS builder
-ARG TARGETARCH
+FROM ubuntu:26.04 AS builder
 
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 
@@ -15,16 +14,16 @@ ENV LANG=C.UTF-8 \
     CPPFLAGS=-DENABLE_PATH_CHECK=0 \
     RUBY_MAJOR=${RUBY_MAJOR} \
     RUBY_VERSION=${RUBY_VERSION} \
-    RUBY_CHECKSUM=${RUBY_CHECKSUM} 
+    RUBY_CHECKSUM=${RUBY_CHECKSUM}
 
 # Build-time dependencies for Ruby.
 # TODO: remove curl and gpg once downloads are done in the build script.
-RUN install_packages --no-install-recommends curl ca-certificates g++ gpg libc-dev make bison patch libdb-dev libffi-dev libgdbm-dev libgmp-dev libreadline-dev libssl-dev libyaml-dev zlib1g-dev uuid-dev libjemalloc-dev rustc
+RUN install_packages --no-install-recommends curl ca-certificates g++ gpg libc-dev make bison patch libdb-dev libffi-dev libgdbm-dev libgmp-dev libreadline-dev libssl-dev libyaml-dev zlib1g-dev uuid-dev rustc
 
 # Process the repo signing key for nodesource so we don't have to include gpg
 # in the final image.
 # TODO: do this externally, in the build script.
-RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor > /usr/share/keyrings/nodesource.gpg
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor > /usr/share/keyrings/nodesource.gpg
 
 
 # Build/install Ruby and update the default gems so that we have an up-to-date
@@ -49,15 +48,17 @@ RUN set -x; \
       --mandir=/tmp/throwaway \
       --disable-install-doc \
       --enable-shared \
+      --enable-yjit \
     ; \
     make; \
     make install; \
     gem update --system '3.7.2' --silent --no-document; \
     gem pristine --extensions; \
-    gem cleanup;
+    gem cleanup; \
+    rm -fr /usr/local/lib/ruby/gems/*/cache/*;
 
 
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 LABEL org.opencontainers.image.title="govuk-ruby-base"
 LABEL org.opencontainers.image.authors="GOV.UK Platform Engineering"
@@ -98,7 +99,10 @@ ENV APP_HOME=/app \
 
 # Amazon RDS cert bundle for connecting to managed databases over TLS.
 # TODO: remove rds-combined-ca-bundle.pem once Router API is using global-bundle.pem.
-ADD https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem /etc/ssl/certs/rds-combined-ca-bundle.pem
+# The legacy combined bundle no longer changes so we pin it; the global bundle
+# is updated by AWS as CAs rotate so we deliberately track the latest version.
+ADD --checksum=sha256:6a8ba1c9f858386edba0ea82b7bf8168ef513d1eb0df3a08cc7cf4bb89f856d0 \
+    https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem /etc/ssl/certs/rds-combined-ca-bundle.pem
 ADD https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /etc/ssl/certs/rds-global-bundle.pem
 
 # Wrap Ruby binaries in a script that sets up a TMPDIR that Ruby will accept.
@@ -116,20 +120,31 @@ RUN for wrapped_cmd in bundle puma pumactl rails rake "${ruby_bin}"/*; do \
 ENV TMPDIR_FOR_RUBY_ORIGINAL_PATH=${PATH}
 ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
 
-# Install node.js, yarn and other runtime dependencies.
+# Install node.js and other runtime dependencies, applying any OS security
+# updates published since the upstream Ubuntu image was built.
+#
+# The nodesource apt source is configured by hand (equivalent to their
+# setup_NN.x script) to avoid piping a remote script to bash and pulling curl
+# and gnupg into the image. The source is added after the first install
+# because apt needs ca-certificates to fetch from it. Node's C headers are only
+# needed for compiling native addons, which node-gyp downloads separately.
+ARG NODE_MAJOR=22
 COPY --from=builder /usr/share/keyrings/nodesource.gpg /usr/share/keyrings/
-
-RUN install_packages ca-certificates curl libjemalloc-dev libgdbm6 \
+RUN APT_UPGRADE=1 install_packages ca-certificates libjemalloc2 libgdbm6 \
       libjsonnet0 libyaml-0-2 \
       libmariadb3 libpq5 mariadb-client postgresql-client tzdata; \
-      curl -fsSL https://deb.nodesource.com/setup_22.x | bash; \
+    printf '%s\n' 'Types: deb' "URIs: https://deb.nodesource.com/node_${NODE_MAJOR}.x" \
+      'Suites: nodistro' 'Components: main' 'Signed-By: /usr/share/keyrings/nodesource.gpg' \
+      > /etc/apt/sources.list.d/nodesource.sources; \
+    printf '%s\n' 'Package: nodejs' 'Pin: origin deb.nodesource.com' 'Pin-Priority: 600' \
+      > /etc/apt/preferences.d/nodejs; \
     install_packages nodejs; \
+    rm -fr /usr/include/node; \
     echo -n node version:\ ; node -v; \
-    echo -n npm version:\ ; npm -v; \
-    npm install -g yarn@1.22.19
+    echo -n npm version:\ ; npm -v
 
 # Use jemalloc by default.
-ENV LD_PRELOAD=libjemalloc.so
+ENV LD_PRELOAD=libjemalloc.so.2
 
 # Crude smoke test of with_tmpdir_for_ruby.sh. Assert that Ruby Dir.tmpdir
 # returns a subdirectory of /tmp.
@@ -140,27 +155,33 @@ RUN set -x; \
     [ "${expected}" = "${actual}" ]
 
 WORKDIR $APP_HOME
+COPY govuk_prompt.sh /etc/govuk_prompt.sh
 # Some Rubygems (libraries) assume that they can write to tmp/ within the Rails
 # app's base directory.
-RUN ln -fs /tmp $APP_HOME
-RUN groupadd -g 1001 app; \
-    useradd -u 1001 -g app app --home $APP_HOME
-
+#
 # Set irb's history path to somewhere writable so that it doesn't complain.
-RUN echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > "$IRBRC"
-
-COPY govuk_prompt.sh /etc/govuk_prompt.sh
-RUN chmod +x /etc/govuk_prompt.sh \
-    && echo '[ -f /etc/govuk_prompt.sh ] && . /etc/govuk_prompt.sh' >> /etc/bash.bashrc
+#
+# The mariadb CLI tools (used by `rails dbconsole` and mariadb-dump) verify the
+# server's TLS certificate by default, so point them at the RDS CA bundle. This
+# doesn't affect the mysql2 gem, which doesn't read these option files.
+RUN ln -fs /tmp $APP_HOME; \
+    groupadd -g 1001 app; \
+    useradd -u 1001 -g app app --home $APP_HOME; \
+    echo 'IRB.conf[:HISTORY_FILE] = "/tmp/irb_history"' > "$IRBRC"; \
+    printf '%s\n' '[client]' 'ssl-ca=/etc/ssl/certs/rds-global-bundle.pem' > /etc/mysql/conf.d/rds.cnf; \
+    chmod +x /etc/govuk_prompt.sh; \
+    echo '[ -f /etc/govuk_prompt.sh ] && . /etc/govuk_prompt.sh' >> /etc/bash.bashrc
 
 ENV BASH_ENV="/etc/govuk_prompt.sh"
 
-# Crude smoke test: assert that each of the main binaries exits cleanly and
-# that the openssl gem loads.
+# Crude smoke test: assert that each of the main binaries exits cleanly, that
+# the openssl gem loads, that YJIT is available and that jemalloc is preloaded.
 RUN set -x; \
     ruby --version; \
     echo RUBY_DESCRIPTION | irb; \
     echo 'puts OpenSSL::OPENSSL_VERSION' | ruby -r openssl; \
+    ruby --yjit -e 'exit RubyVM::YJIT.enabled?'; \
+    ruby -e 'exit File.read("/proc/self/maps").include?("libjemalloc")'; \
     gem env; \
     bundle version; \
     rm -r /tmp/*;

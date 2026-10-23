@@ -18,7 +18,7 @@ on:
         description: Runner label used for native ARM64 builds.
         required: false
         type: string
-        default: ubuntu-24.04-arm
+        default: ubuntu-26.04-arm
       generateProvenance:
         description: Generate OCI provenance attestation during image build.
         required: false
@@ -78,7 +78,7 @@ jobs:
   build_and_push_images:
     name: Build ruby_${{ join(matrix.version.rubyver, '.') }} ARM images
     needs: configure_builds
-    runs-on: ${{ inputs.runnerName || 'ubuntu-24.04-arm' }}
+    runs-on: ${{ inputs.runnerName || 'ubuntu-26.04-arm' }}
     timeout-minutes: 30
     strategy:
       matrix:
@@ -296,6 +296,46 @@ jobs:
         env:
           DIGEST: ${{ steps.build-builder-image.outputs.digest }}
         run: cosign sign --recursive --yes "${BUILDER_IMAGE_NAME}@${DIGEST}"
+
+      # Report-only for now: surfaces fixable high/critical vulnerabilities
+      # without failing the build.
+      - name: Scan base image for vulnerabilities
+        if: ${{ env.PUSH_TO_REGISTRY == 'true' }}
+        id: scan-base-image
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ env.BASE_IMAGE_NAME }}@${{ steps.build-base-image.outputs.digest }}
+          fail-build: false
+          only-fixed: true
+          severity-cutoff: high
+          output-format: table
+          output-file: grype-base.txt
+
+      - name: Scan builder image for vulnerabilities
+        if: ${{ env.PUSH_TO_REGISTRY == 'true' }}
+        id: scan-builder-image
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ env.BUILDER_IMAGE_NAME }}@${{ steps.build-builder-image.outputs.digest }}
+          fail-build: false
+          only-fixed: true
+          severity-cutoff: high
+          output-format: table
+          output-file: grype-builder.txt
+
+      - name: Write vulnerability scan summary
+        if: ${{ env.PUSH_TO_REGISTRY == 'true' && (github.event_name != 'workflow_dispatch' || inputs.writeSummary) }}
+        run: |
+          {
+            echo '### Vulnerability scan (fixable, all severities)'
+            for img in base builder; do
+              echo
+              echo "#### govuk-ruby-${img}"
+              echo '```'
+              cat "grype-${img}.txt"
+              echo '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Write push build summary
         if: ${{ env.PUSH_TO_REGISTRY == 'true' && (github.event_name != 'workflow_dispatch' || inputs.writeSummary) }}

@@ -119,6 +119,7 @@ The ARM image build workflow (`.github/workflows/build-push-arm-image.yml`), tri
 - **Failure notifications**: Failed builds automatically notify `#govuk-platform-support` via Slack
 - **Manual triggering**: Workflow can be dispatched manually for a chosen ref, with optional local-only builds that skip registry push
 - **Supply chain metadata**: Builds publish provenance, SBOM attestations, and Cosign signatures
+- **Vulnerability scanning**: Pushed images are scanned with Grype and fixable vulnerabilities are listed in the job summary (report-only; does not fail the build)
 
 The build app workflow (`.github/workflows/build-app.yaml`) ensures that changes to `base.Dockerfile` and `builder.Dockerfile` are
 tested against `release` (Ruby 4.x) and `govuk-replatform-test-app` (Ruby 3.3.x) to ensure this doesn't break the CI/CD pipeline.

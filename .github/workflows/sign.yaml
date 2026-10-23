@@ -8,13 +8,31 @@ on:
   workflow_dispatch:
 
 jobs:
-  sign:
+  configure_builds:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-    name: Create attestation
+    name: Read configuration from build-matrix.json
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      versions: ${{ steps.set-matrix.outputs.versions }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 1
+          show-progress: false
+
+      - id: set-matrix
+        run: echo "versions=$(jq -c '[.version[].rubyver[0:2] | join(".")]' < build-matrix.json)" >> "$GITHUB_OUTPUT"
+
+  sign:
+    name: Create attestation
+    needs: configure_builds
+    runs-on: ubuntu-26.04-arm
     strategy:
       matrix:
-        version: ['3.2', '3.3', '3.4', '4.0']
+        version: ${{ fromJson(needs.configure_builds.outputs.versions) }}
     permissions:
       packages: write
       id-token: write
@@ -35,13 +53,15 @@ jobs:
           role-session-name: sign-govuk-ruby-images
           aws-region: eu-west-1
       - name: Create attestation
+        env:
+          RUBY_MAJOR: ${{ matrix.version }}
+          SYFT: ${{ steps.syft.outputs.cmd }}
         run: |
-          BASE_IMAGE='ghcr.io/alphagov/govuk-ruby-base:${{ matrix.version }}'
-          BUILDER_IMAGE='ghcr.io/alphagov/govuk-ruby-builder:${{ matrix.version }}'
-          SYFT='${{steps.syft.outputs.cmd }}'
-
-          $SYFT --output spdx-json "${BASE_IMAGE}" > base.spdx.json
-          $SYFT --output spdx-json "${BUILDER_IMAGE}" > builder.spdx.json
-
-          cosign attest -y --type spdxjson --predicate base.spdx.json --key "awskms:///alias/container-signing-key" "${BASE_IMAGE}"
-          cosign attest -y --type spdxjson --predicate builder.spdx.json --key "awskms:///alias/container-signing-key" "${BUILDER_IMAGE}"
+          for img in base builder; do
+            repo="ghcr.io/alphagov/govuk-ruby-${img}"
+            # Resolve the tag once so that the SBOM and the attestation refer to
+            # the same image even if the tag moves while this job is running.
+            digest=$(docker buildx imagetools inspect "${repo}:${RUBY_MAJOR}" --format '{{json .Manifest}}' | jq -r .digest)
+            "$SYFT" --platform linux/arm64 --output spdx-json "${repo}@${digest}" > "${img}.spdx.json"
+            cosign attest -y --type spdxjson --predicate "${img}.spdx.json" --key "awskms:///alias/container-signing-key" "${repo}@${digest}"
+          done

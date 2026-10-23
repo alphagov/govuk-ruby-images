@@ -5,8 +5,9 @@ FROM ${BASE_IMAGE_REF}
 ARG OWNER
 
 RUN install_packages \
-    g++ git gpg libc-dev libcurl4-openssl-dev libgdbm-dev libssl-dev \
-    libmariadb-dev-compat libpq-dev libjsonnet-dev libyaml-dev make xz-utils
+    curl g++ git gpg libc-dev libcurl4-openssl-dev libgdbm-dev libssl-dev \
+    libmariadb-dev-compat libpq-dev libjsonnet-dev libyaml-dev make xz-utils; \
+    npm install -g yarn@1.22.19
 
 # Environment variables to make build cleaner and faster
 ENV BUNDLE_IGNORE_MESSAGES=1 \
