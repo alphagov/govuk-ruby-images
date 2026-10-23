@@ -2,13 +2,6 @@
     "version": [
         {
             "rubyver": [
-                "3", "2", "11"
-            ],
-            "checksum": "b3eeabd6636f334531db3ffdc3229eb05e524740e6c84fdc043720573cf2f8b2",
-            "extra": ""
-        },
-        {
-            "rubyver": [
                 "3", "3", "12"
             ],
             "checksum": "b06d63beae271933033e27f0a389bc582a009e7845357d44365c39de525a051b",
@@ -27,16 +20,6 @@
             ],
             "checksum": "0968e2ac4cbd6f1fd85d3092aed66cd3c2d8ba4a5e2493d6e6c6cb0c431897d2",
             "extra": "latest"
-        }
-    ],
-    "runs_on": [
-        {
-            "runner_type": "ubuntu-latest",
-            "arch": "amd64"
-        },
-        {
-            "runner_type": "ubuntu-26.04-arm",
-            "arch": "arm64"
         }
     ]
 }

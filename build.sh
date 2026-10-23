@@ -30,7 +30,7 @@ build_version() {
     echo "Building ${img} image for Ruby ${ruby_major_minor} (${ruby_version})"
     image_name="govuk-ruby-${img}"
     docker buildx build \
-      --platform "${ARCHS:-linux/amd64,linux/arm64}" \
+      --platform "${ARCHS:-linux/arm64}" \
       --load \
       --build-arg "RUBY_MAJOR=${ruby_major_minor}" \
       --build-arg "RUBY_VERSION=${ruby_version}" \
