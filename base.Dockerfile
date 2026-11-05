@@ -130,6 +130,10 @@ ENV PATH=${TMPDIR_FOR_RUBY_WRAPPERS_DIR}:${PATH}
 # needed for compiling native addons, which node-gyp downloads separately.
 ARG NODE_MAJOR=22
 COPY --from=builder /usr/share/keyrings/nodesource.gpg /usr/share/keyrings/
+# A change in APT_REFRESH_KEY invalidates the build cache from here onwards, so
+# that the packages below are refreshed. CI sets it with apt_refresh_key.sh,
+# which only produces a new key when an update is available.
+ARG APT_REFRESH_KEY
 RUN APT_UPGRADE=1 install_packages ca-certificates libjemalloc2 libgdbm6 \
       libjsonnet0 libyaml-0-2 \
       libmariadb3 libpq5 mariadb-client postgresql-client tzdata; \
