@@ -139,6 +139,16 @@ jobs:
           echo "base=govuk-ruby-base:arm-${RUBY_VERSION}" >> "$GITHUB_OUTPUT"
           echo "builder=govuk-ruby-builder:arm-${RUBY_VERSION}" >> "$GITHUB_OUTPUT"
 
+      # Without this, nightly builds reuse the cached apt layer and never pick up
+      # Ubuntu or NodeSource security updates. The key only changes when an
+      # update is available, so on quiet nights the image layers are unchanged.
+      - name: Compute apt refresh key
+        id: apt-refresh-key
+        run: |
+          key=$(./apt_refresh_key.sh "${BASE_IMAGE_NAME}:${RUBY_VERSION}")
+          [ -n "${key}" ]
+          echo "key=${key}" >> "$GITHUB_OUTPUT"
+
       - name: Generate base image metadata
         id: base-image-metadata
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
@@ -183,6 +193,7 @@ jobs:
             RUBY_MAJOR=${{ env.RUBY_MAJOR }}
             RUBY_VERSION=${{ env.RUBY_VERSION }}
             RUBY_CHECKSUM=${{ matrix.version.checksum }}
+            APT_REFRESH_KEY=${{ steps.apt-refresh-key.outputs.key }}
           pull: true
           push: true
           platforms: ${{ env.IMAGE_PLATFORM }}
@@ -205,6 +216,7 @@ jobs:
             RUBY_MAJOR=${{ env.RUBY_MAJOR }}
             RUBY_VERSION=${{ env.RUBY_VERSION }}
             RUBY_CHECKSUM=${{ matrix.version.checksum }}
+            APT_REFRESH_KEY=${{ steps.apt-refresh-key.outputs.key }}
           pull: true
           load: true
           platforms: ${{ env.IMAGE_PLATFORM }}
@@ -350,6 +362,7 @@ jobs:
             echo "- Git ref: \`${{ inputs.gitRef || github.ref }}\`"
             echo "- Platform: \`${IMAGE_PLATFORM}\`"
             echo "- Pushed to registry: \`true\`"
+            echo "- Apt refresh key: \`${{ steps.apt-refresh-key.outputs.key }}\`"
             echo "- Base image: \`${BASE_IMAGE_NAME}\` @ \`${BASE_DIGEST}\`"
             echo "- Builder image: \`${BUILDER_IMAGE_NAME}\` @ \`${BUILDER_DIGEST}\`"
             echo "- Signed with Cosign: \`${{ github.event_name != 'workflow_dispatch' || inputs.signImage }}\`"
@@ -365,6 +378,7 @@ jobs:
             echo "- Git ref: \`${{ inputs.gitRef || github.ref }}\`"
             echo "- Platform: \`${IMAGE_PLATFORM}\`"
             echo "- Pushed to registry: \`false\`"
+            echo "- Apt refresh key: \`${{ steps.apt-refresh-key.outputs.key }}\`"
             echo "- Base image: \`${{ steps.local-image-refs.outputs.base }}\`"
             echo "- Builder image: \`${{ steps.local-image-refs.outputs.builder }}\`"
             echo '- Provenance/SBOM/signing skipped for local-only builds'

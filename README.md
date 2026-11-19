@@ -120,6 +120,7 @@ The ARM image build workflow (`.github/workflows/build-push-arm-image.yml`), tri
 - **Manual triggering**: Workflow can be dispatched manually for a chosen ref, with optional local-only builds that skip registry push
 - **Supply chain metadata**: Builds publish provenance, SBOM attestations, and Cosign signatures
 - **Vulnerability scanning**: Pushed images are scanned with Grype and fixable vulnerabilities are listed in the job summary (report-only; does not fail the build)
+- **Security updates**: Before building, `apt_refresh_key.sh` checks the published image for pending Ubuntu and NodeSource package updates. When there are any, the apt layer is rebuilt instead of being reused from the build cache; the Ruby build itself stays cached. Pending updates are listed in the build log
 
 The build app workflow (`.github/workflows/build-app.yaml`) ensures that changes to `base.Dockerfile` and `builder.Dockerfile` are
 tested against `release` (Ruby 4.x) and `govuk-replatform-test-app` (Ruby 3.3.x) to ensure this doesn't break the CI/CD pipeline.
